@@ -27,7 +27,7 @@ func parseURL(url string) (URLParams, error) {
 
 	urlData := strings.Split(url[1:], "/")
 	if len(urlData) != 4 {
-		return urlParams, errors.New("Error parameters coumt from URL")
+		return urlParams, errors.New("error parameters coumt from URL")
 	}
 	urlParams.metricType = urlData[1]
 	urlParams.metricName = urlData[2]
