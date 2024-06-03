@@ -23,29 +23,29 @@ type URLParams struct {
 var storage MemStorage
 
 func parseURL(url string) (URLParams, error) {
-	var url_params URLParams
+	var urlParams URLParams
 
-	url_data := strings.Split(url[1:], "/")
-	if len(url_data) != 4 {
-		return url_params, errors.New("Error parameters coumt from URL")
+	urlData := strings.Split(url[1:], "/")
+	if len(urlData) != 4 {
+		return urlParams, errors.New("Error parameters coumt from URL")
 	}
-	url_params.metricType = url_data[1]
-	url_params.metricName = url_data[2]
-	url_params.metricValue = url_data[3]
+	urlParams.metricType = urlData[1]
+	urlParams.metricName = urlData[2]
+	urlParams.metricValue = urlData[3]
 
-	return url_params, nil
+	return urlParams, nil
 }
 
 func mainPage(res http.ResponseWriter, req *http.Request) {
-	url_params, err := parseURL(req.URL.Path)
+	urlParams, err := parseURL(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 	}
 
-	switch url_params.metricType {
+	switch urlParams.metricType {
 	case "counter":
-		valueInt, err := strconv.ParseInt(url_params.metricValue, 10, 64)
+		valueInt, err := strconv.ParseInt(urlParams.metricValue, 10, 64)
 		if err != nil {
 			log.Error(err)
 			res.WriteHeader(http.StatusBadRequest)
@@ -55,10 +55,10 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 		if storage.counter == nil {
 			storage.counter = make(map[string]int64)
 		}
-		storage.counter[url_params.metricName] += valueInt
+		storage.counter[urlParams.metricName] += valueInt
 		res.WriteHeader(http.StatusOK)
 	case "gauge":
-		valueFloat, err := strconv.ParseFloat(strings.TrimSpace(url_params.metricValue), 64)
+		valueFloat, err := strconv.ParseFloat(strings.TrimSpace(urlParams.metricValue), 64)
 		if err != nil {
 			log.Error(err)
 			res.WriteHeader(http.StatusBadRequest)
@@ -67,7 +67,7 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 		if storage.gauge == nil {
 			storage.gauge = make(map[string]float64)
 		}
-		storage.gauge[url_params.metricName] = valueFloat
+		storage.gauge[urlParams.metricName] = valueFloat
 		res.WriteHeader(http.StatusOK)
 	default:
 		res.WriteHeader(http.StatusBadRequest)
