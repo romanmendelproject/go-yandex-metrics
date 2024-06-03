@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type MemStorage struct {
@@ -39,7 +37,6 @@ func parseURL(url string) (URLParams, error) {
 func mainPage(res http.ResponseWriter, req *http.Request) {
 	url_params, err := parseURL(req.URL.Path)
 	if err != nil {
-		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 	}
 
@@ -47,7 +44,6 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 	case "counter":
 		valueInt, err := strconv.ParseInt(url_params.metricValue, 10, 64)
 		if err != nil {
-			log.Error(err)
 			res.WriteHeader(http.StatusBadRequest)
 
 		}
@@ -60,7 +56,6 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 	case "gauge":
 		valueFloat, err := strconv.ParseFloat(strings.TrimSpace(url_params.metricValue), 64)
 		if err != nil {
-			log.Error(err)
 			res.WriteHeader(http.StatusBadRequest)
 		}
 
@@ -71,12 +66,10 @@ func mainPage(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
 	default:
 		res.WriteHeader(http.StatusBadRequest)
-		log.Error("Error type of metric")
 	}
 }
 
 func main() {
-	log.SetLevel(log.DebugLevel)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/update/`, mainPage)
