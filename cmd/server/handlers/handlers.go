@@ -9,6 +9,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func HandleBadRequest(res http.ResponseWriter, req *http.Request) {
+	res.WriteHeader(http.StatusBadRequest)
+}
+
 func UpdateGauge(storage storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {

@@ -13,6 +13,8 @@ func main() {
 	storage := storage.InitMemStorage()
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", handlers.HandleBadRequest)
 	mux.HandleFunc("/update/gauge/", handlers.UpdateGauge(&storage))
 	mux.HandleFunc("/update/counter/", handlers.UpdateCounter(&storage))
 
