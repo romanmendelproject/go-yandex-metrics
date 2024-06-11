@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +22,7 @@ func UpdateGauge(storage storage.Storage) http.HandlerFunc {
 			res.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		urlParams, err := ParseURL(req.URL.Path)
+		urlParams, err := ParseURLUpdate(req.URL.Path)
 		if err != nil {
 			log.Error(err)
 			res.WriteHeader(http.StatusNotFound)
@@ -46,7 +48,7 @@ func UpdateCounter(storage storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		urlParams, err := ParseURL(req.URL.Path)
+		urlParams, err := ParseURLUpdate(req.URL.Path)
 		if err != nil {
 			log.Error(err)
 			res.WriteHeader(http.StatusNotFound)
@@ -63,5 +65,51 @@ func UpdateCounter(storage storage.Storage) http.HandlerFunc {
 		storage.SetCounter(urlParams.metricName, valueInt)
 
 		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func ValueGauge(storage storage.Storage) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		urlParams, err := ParseURLValue(req.URL.Path)
+		if err != nil {
+			log.Error(err)
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		value, err := storage.GetGauge(urlParams.metricName)
+		if err != nil {
+			log.Error(err)
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		io.WriteString(res, fmt.Sprintf("item = %s value = %f", urlParams.metricName, value))
+	}
+}
+
+func ValueCounter(storage storage.Storage) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		urlParams, err := ParseURLValue(req.URL.Path)
+		if err != nil {
+			log.Error(err)
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		value, err := storage.GetCounter(urlParams.metricName)
+		if err != nil {
+			log.Error(err)
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		io.WriteString(res, fmt.Sprintf("item = %s value = %d", urlParams.metricName, value))
+	}
+}
+
+func AllData(storage storage.Storage) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		values := storage.GetAll()
+
+		for i, value := range values {
+			io.WriteString(res, fmt.Sprintf("%d type = %s  name = %s value = %v", i, value.Type, value.Name, value.Value))
+		}
 	}
 }

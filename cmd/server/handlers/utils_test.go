@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestParseURL(t *testing.T) {
+func TestParseURLUpdate(t *testing.T) {
 	type args struct {
 		url string
 	}
@@ -58,7 +58,7 @@ func TestParseURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseURL(tt.args.url)
+			got, err := ParseURLUpdate(tt.args.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseURL() error = %v, wantErr %v", err, tt.wantErr)
 				return
