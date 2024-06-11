@@ -28,6 +28,8 @@ func main() {
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/gauge/{mname}/{mvalue}", handlers.UpdateGauge(&storage))
 		r.Post("/counter/{mname}/{mvalue}", handlers.UpdateCounter(&storage))
+		r.Post("/counter/{mname}", handlers.HandleStatusNotFound)
+		r.Post("/gauge/{mname}", handlers.HandleStatusNotFound)
 		r.Post("/*", handlers.HandleBadRequest)
 	})
 

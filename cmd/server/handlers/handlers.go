@@ -15,6 +15,10 @@ func HandleBadRequest(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusBadRequest)
 }
 
+func HandleStatusNotFound(res http.ResponseWriter, req *http.Request) {
+	res.WriteHeader(http.StatusNotFound)
+}
+
 func UpdateGauge(storage storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
