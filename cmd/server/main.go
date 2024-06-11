@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	parseFlags()
 	log.SetLevel(log.DebugLevel)
 	storage := storage.InitMemStorage()
 
@@ -33,7 +34,7 @@ func main() {
 		r.Post("/*", handlers.HandleBadRequest)
 	})
 
-	err := http.ListenAndServe(":8080", r)
+	err := http.ListenAndServe(flagRunAddr, r)
 	if err != nil {
 		panic(err)
 	}

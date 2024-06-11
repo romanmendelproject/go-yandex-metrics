@@ -22,8 +22,7 @@ func (m *Metrics) Init() {
 }
 
 func (m *Metrics) Update() error {
-	time.Sleep(time.Second * poolInterval)
-
+	time.Sleep(time.Second * time.Duration(pollInterval))
 	var runtimeMetrics runtime.MemStats
 	runtime.ReadMemStats(&runtimeMetrics)
 

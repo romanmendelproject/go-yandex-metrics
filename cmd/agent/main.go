@@ -8,13 +8,8 @@ import (
 	"time"
 )
 
-var (
-	urlAPI         = "http://localhost:8080"
-	poolInterval   = time.Duration(2)
-	reportInterval = time.Duration(10)
-)
-
 func main() {
+	parseFlags()
 	var metrics Metrics
 	metrics.Init()
 
@@ -31,8 +26,7 @@ func main() {
 }
 
 func updateMetrics(m *Metrics) {
-	time.Sleep(time.Second * reportInterval)
-
+	time.Sleep(time.Second * time.Duration(reportInterval))
 	for k, v := range m.Data {
 		if err := updateMetric(k, v); err != nil {
 			panic(err)
@@ -61,7 +55,7 @@ func updateMetric(name string, metric Metric) error {
 		return errors.New("unknown metric type")
 	}
 
-	url := fmt.Sprintf("%s/update/%s/%s/%v", urlAPI, metric.Type, name, value)
+	url := fmt.Sprintf("http://%s/update/%s/%s/%v", flagReqAddr, metric.Type, name, value)
 
 	res, err := http.Post(url, "text/plain", nil)
 	if err != nil {
