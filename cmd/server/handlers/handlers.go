@@ -86,7 +86,7 @@ func ValueGauge(storage storage.Storage) http.HandlerFunc {
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
-		io.WriteString(res, fmt.Sprintf("%v", strconv.FormatFloat(value, 'f', 3, 64)))
+		io.WriteString(res, fmt.Sprintf("%v", strconv.FormatFloat(value, 'f', -1, 64)))
 	}
 }
 
