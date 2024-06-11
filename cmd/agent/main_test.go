@@ -12,6 +12,7 @@ func handlerServer(res http.ResponseWriter, req *http.Request) {
 }
 
 func Test_updateMetric(t *testing.T) {
+	parseFlags()
 	type args struct {
 		name   string
 		metric Metric
