@@ -20,6 +20,7 @@ func main() {
 	r.Get("/", handlers.AllData(&storage))
 	r.Post("/", handlers.HandleBadRequest)
 
+	// TODO Не разобрался сходу как прокинуть параметры {mname} и т.д. в handlers.ValueGauge
 	r.Route("/value", func(r chi.Router) {
 		r.Get("/gauge/{mname}", handlers.ValueGauge(&storage))
 		r.Get("/counter/{mname}", handlers.ValueCounter(&storage))

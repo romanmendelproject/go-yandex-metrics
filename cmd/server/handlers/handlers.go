@@ -73,6 +73,7 @@ func UpdateCounter(storage storage.Storage) http.HandlerFunc {
 	}
 }
 
+// TODO Думаю стоит объеденить в одну функцию получение значения
 func ValueGauge(storage storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		urlParams, err := ParseURLValue(req.URL.Path)
