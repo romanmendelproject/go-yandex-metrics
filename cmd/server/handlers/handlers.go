@@ -40,6 +40,7 @@ func UpdateGauge(storage storage.Storage) http.HandlerFunc {
 		}
 
 		storage.SetGauge(urlParams.metricName, valueFloat)
+		fmt.Println(storage)
 		res.WriteHeader(http.StatusOK)
 	}
 }

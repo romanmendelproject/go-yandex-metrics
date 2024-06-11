@@ -10,6 +10,7 @@ import (
 
 func main() {
 	parseFlags()
+
 	var metrics Metrics
 	metrics.Init()
 
