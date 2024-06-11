@@ -86,7 +86,7 @@ func ValueGauge(storage storage.Storage) http.HandlerFunc {
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
-		io.WriteString(res, fmt.Sprintf("item = %s value = %f", urlParams.metricName, value))
+		io.WriteString(res, fmt.Sprintf("%f", value))
 	}
 }
 
@@ -104,7 +104,7 @@ func ValueCounter(storage storage.Storage) http.HandlerFunc {
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
-		io.WriteString(res, fmt.Sprintf("item = %s value = %d", urlParams.metricName, value))
+		io.WriteString(res, fmt.Sprintf("%d", value))
 	}
 }
 
