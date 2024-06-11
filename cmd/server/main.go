@@ -19,11 +19,17 @@ func main() {
 	r.Get("/", handlers.AllData(&storage))
 	r.Post("/", handlers.HandleBadRequest)
 
-	r.Get("/value/gauge/{mname}", handlers.ValueGauge(&storage))
-	r.Get("/value/counter/{mname}", handlers.ValueCounter(&storage))
+	r.Route("/value", func(r chi.Router) {
+		r.Get("/gauge/{mname}", handlers.ValueGauge(&storage))
+		r.Get("/counter/{mname}", handlers.ValueCounter(&storage))
+		r.Get("/*", handlers.HandleBadRequest)
+	})
 
-	r.Post("/update/gauge/{mname}/{mvalue}", handlers.UpdateGauge(&storage))
-	r.Post("/update/counter/{mname}/{mvalue}", handlers.UpdateCounter(&storage))
+	r.Route("/update", func(r chi.Router) {
+		r.Post("/gauge/{mname}/{mvalue}", handlers.UpdateGauge(&storage))
+		r.Post("/counter/{mname}/{mvalue}", handlers.UpdateCounter(&storage))
+		r.Post("/*", handlers.HandleBadRequest)
+	})
 
 	err := http.ListenAndServe(":8080", r)
 	if err != nil {
