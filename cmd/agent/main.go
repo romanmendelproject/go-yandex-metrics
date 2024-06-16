@@ -1,5 +1,7 @@
 package main
 
+import log "github.com/sirupsen/logrus"
+
 func main() {
 	parseFlags()
 
@@ -14,6 +16,8 @@ func main() {
 			}
 		}()
 
-		reportMetrics(&metrics)
+		if err := reportMetrics(&metrics); err != nil {
+			log.Error(err)
+		}
 	}
 }
