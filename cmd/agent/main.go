@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/report"
 
 	log "github.com/sirupsen/logrus"
 )
