@@ -1,9 +1,11 @@
-package main
+package metrics
 
 import (
 	"math/rand"
 	"runtime"
 	"time"
+
+	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 )
 
 type MetricGauge struct {
@@ -29,7 +31,7 @@ func (m *Metrics) Init() {
 }
 
 func (m *Metrics) Update() error {
-	time.Sleep(time.Second * time.Duration(pollInterval))
+	time.Sleep(time.Second * time.Duration(config.PollInterval))
 	var runtimeMetrics runtime.MemStats
 	runtime.ReadMemStats(&runtimeMetrics)
 

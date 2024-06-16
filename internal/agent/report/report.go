@@ -5,19 +5,22 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
+
 	log "github.com/sirupsen/logrus"
 )
 
-func reportMetrics(m *Metrics) error {
-	time.Sleep(time.Second * time.Duration(reportInterval))
+func ReportMetrics(m *metrics.Metrics) error {
+	time.Sleep(time.Second * time.Duration(config.ReportInterval))
 	for k, v := range m.DataGauge {
-		url := fmt.Sprintf("http://%s/update/%s/%s/%v", flagReqAddr, v.Type, k, v.Value)
+		url := fmt.Sprintf("http://%s/update/%s/%s/%v", config.FlagReqAddr, v.Type, k, v.Value)
 		if err := sendMetric(url); err != nil {
 			log.Error(err)
 		}
 	}
 	for k, v := range m.DataCount {
-		url := fmt.Sprintf("http://%s/update/%s/%s/%v", flagReqAddr, v.Type, k, v.Value)
+		url := fmt.Sprintf("http://%s/update/%s/%s/%v", config.FlagReqAddr, v.Type, k, v.Value)
 		if err := sendMetric(url); err != nil {
 			log.Error(err)
 		}

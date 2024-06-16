@@ -3,39 +3,23 @@ package main
 import (
 	"net/http"
 
-	"github.com/romanmendelproject/go-yandex-metrics/cmd/server/handlers"
-	"github.com/romanmendelproject/go-yandex-metrics/cmd/server/storage"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 
-	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	parseFlags()
+	config.ParseFlags()
 	log.SetLevel(log.DebugLevel)
-	storage := storage.InitMemStorage()
+	storage := storage.NewMemStorage()
 
-	r := chi.NewRouter()
+	handler := handlers.NewHandlers(storage)
+	r := router.NewRouter(handler)
 
-	r.Get("/", handlers.AllData(&storage))
-	r.Post("/", handlers.HandleBadRequest)
-
-	// TODO Не разобрался сходу как прокинуть параметры {mname} и т.д. в handlers.ValueGauge
-	r.Route("/value", func(r chi.Router) {
-		r.Get("/gauge/{mname}", handlers.ValueGauge(&storage))
-		r.Get("/counter/{mname}", handlers.ValueCounter(&storage))
-		r.Get("/*", handlers.HandleBadRequest)
-	})
-
-	r.Route("/update", func(r chi.Router) {
-		r.Post("/gauge/{mname}/{mvalue}", handlers.UpdateGauge(&storage))
-		r.Post("/counter/{mname}/{mvalue}", handlers.UpdateCounter(&storage))
-		r.Post("/counter/*", handlers.HandleStatusNotFound)
-		r.Post("/gauge/*", handlers.HandleStatusNotFound)
-		r.Post("/*", handlers.HandleBadRequest)
-	})
-
-	err := http.ListenAndServe(flagRunAddr, r)
+	err := http.ListenAndServe(config.FlagRunAddr, r)
 	if err != nil {
 		panic(err)
 	}

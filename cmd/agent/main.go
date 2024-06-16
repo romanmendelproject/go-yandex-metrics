@@ -1,11 +1,16 @@
 package main
 
-import log "github.com/sirupsen/logrus"
+import (
+	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
+
+	log "github.com/sirupsen/logrus"
+)
 
 func main() {
-	parseFlags()
+	config.ParseFlags()
 
-	var metrics Metrics
+	var metrics metrics.Metrics
 	metrics.Init()
 
 	for {
@@ -16,7 +21,7 @@ func main() {
 			}
 		}()
 
-		if err := reportMetrics(&metrics); err != nil {
+		if err := report.ReportMetrics(&metrics); err != nil {
 			log.Error(err)
 		}
 	}

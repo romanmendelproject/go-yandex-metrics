@@ -16,8 +16,8 @@ type Value struct {
 	Value interface{}
 }
 
-func InitMemStorage() MemStorage {
-	return MemStorage{
+func NewMemStorage() *MemStorage {
+	return &MemStorage{
 		gauge:   make(map[string]float64),
 		counter: make(map[string]int64),
 	}
@@ -73,12 +73,4 @@ func (m *MemStorage) GetAll() []Value {
 	}
 
 	return values
-}
-
-type Storage interface {
-	SetGauge(name string, value float64)
-	SetCounter(name string, value int64)
-	GetGauge(name string) (float64, error)
-	GetCounter(name string) (int64, error)
-	GetAll() []Value
 }

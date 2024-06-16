@@ -12,7 +12,7 @@ func TestParseURLUpdate(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    URLParamsUpdate
+		want    URLParams
 		wantErr bool
 	}{
 		{
@@ -20,7 +20,7 @@ func TestParseURLUpdate(t *testing.T) {
 			args: args{
 				url: "/update/gauge/test/0.1",
 			},
-			want: URLParamsUpdate{
+			want: URLParams{
 				metricType:  "gauge",
 				metricName:  "test",
 				metricValue: "0.1",
@@ -32,7 +32,7 @@ func TestParseURLUpdate(t *testing.T) {
 			args: args{
 				url: "/update/gauge/test/1",
 			},
-			want: URLParamsUpdate{
+			want: URLParams{
 				metricType:  "gauge",
 				metricName:  "test",
 				metricValue: "1",
@@ -44,7 +44,7 @@ func TestParseURLUpdate(t *testing.T) {
 			args: args{
 				url: "/update/gauge/test/test/1",
 			},
-			want:    URLParamsUpdate{},
+			want:    URLParams{},
 			wantErr: true,
 		},
 		{
@@ -52,7 +52,7 @@ func TestParseURLUpdate(t *testing.T) {
 			args: args{
 				url: "/update/gauge/1",
 			},
-			want:    URLParamsUpdate{},
+			want:    URLParams{},
 			wantErr: true,
 		},
 	}

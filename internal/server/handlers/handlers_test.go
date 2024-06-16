@@ -5,12 +5,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/romanmendelproject/go-yandex-metrics/cmd/server/storage"
-	"github.com/stretchr/testify/assert"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	"github.com/stretchr/testify/require"
 )
 
-func TestUpdateGauge(t *testing.T) {
+func TestServiceHandlers_UpdateGauge(t *testing.T) {
 	type args struct {
 		httpMethod string
 		path       string
@@ -53,16 +52,16 @@ func TestUpdateGauge(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 		},
 	}
+	storage := storage.NewMemStorage()
 
-	storage := storage.InitMemStorage()
-	handlerUpdateGauge := UpdateGauge(&storage)
+	handler := NewHandlers(storage)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.args.httpMethod, tt.args.path, nil)
 
 			w := httptest.NewRecorder()
-			handlerUpdateGauge(w, request)
+			handler.UpdateGauge(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
@@ -72,7 +71,7 @@ func TestUpdateGauge(t *testing.T) {
 	}
 }
 
-func TestUpdateCounter(t *testing.T) {
+func TestServiceHandlers_UpdateCount(t *testing.T) {
 	type args struct {
 		httpMethod string
 		path       string
@@ -123,21 +122,21 @@ func TestUpdateCounter(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 		},
 	}
+	storage := storage.NewMemStorage()
 
-	storage := storage.InitMemStorage()
-	handlerUpdateCounter := UpdateCounter(&storage)
+	handler := NewHandlers(storage)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.args.httpMethod, tt.args.path, nil)
 
 			w := httptest.NewRecorder()
-			handlerUpdateCounter(w, request)
+			handler.UpdateCounter(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
 
-			assert.Equal(t, res.StatusCode, tt.wantStatusCode)
+			require.Equal(t, res.StatusCode, tt.wantStatusCode)
 		})
 	}
 }

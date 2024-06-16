@@ -5,19 +5,12 @@ import (
 	"strings"
 )
 
-type URLParamsUpdate struct {
-	metricType  string
-	metricName  string
-	metricValue string
+type URLParams struct {
+	metricType, metricName, metricValue string
 }
 
-type URLParamsValue struct {
-	metricType string
-	metricName string
-}
-
-func ParseURLUpdate(url string) (URLParamsUpdate, error) {
-	var urlParams URLParamsUpdate
+func ParseURLUpdate(url string) (URLParams, error) {
+	var urlParams URLParams
 
 	urlData := strings.Split(url[1:], "/")
 	if len(urlData) != 4 {
@@ -30,8 +23,8 @@ func ParseURLUpdate(url string) (URLParamsUpdate, error) {
 	return urlParams, nil
 }
 
-func ParseURLValue(url string) (URLParamsValue, error) {
-	var urlParams URLParamsValue
+func ParseURLValue(url string) (URLParams, error) {
+	var urlParams URLParams
 
 	urlData := strings.Split(url[1:], "/")
 	if len(urlData) != 3 {
