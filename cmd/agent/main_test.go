@@ -11,7 +11,7 @@ func handlerServer(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-func Test_updateMetric(t *testing.T) {
+func Test_sendMetric(t *testing.T) {
 	parseFlags()
 	type args struct {
 		name   string
@@ -59,8 +59,8 @@ func Test_updateMetric(t *testing.T) {
 	defer server.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := updateMetric(tt.args.name, tt.args.metric); (err != nil) != tt.wantErr {
-				t.Errorf("updateMetric() error = %v, wantErr %v", err, tt.wantErr)
+			if err := sendMetric(tt.args.name, tt.args.metric); (err != nil) != tt.wantErr {
+				t.Errorf("sendMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -22,20 +22,20 @@ func main() {
 			}
 		}()
 
-		updateMetrics(&metrics)
+		reportMetrics(&metrics)
 	}
 }
 
-func updateMetrics(m *Metrics) {
+func reportMetrics(m *Metrics) {
 	time.Sleep(time.Second * time.Duration(reportInterval))
 	for k, v := range m.Data {
-		if err := updateMetric(k, v); err != nil {
+		if err := sendMetric(k, v); err != nil {
 			panic(err)
 		}
 	}
 }
 
-func updateMetric(name string, metric Metric) error {
+func sendMetric(name string, metric Metric) error {
 	var value interface{}
 
 	switch metric.Value.(type) {
