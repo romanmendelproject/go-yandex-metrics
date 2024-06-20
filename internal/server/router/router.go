@@ -3,10 +3,12 @@ package router
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
 )
 
 func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(logger.RequestLogger)
 
 	r.Get("/", handler.AllData)
 	r.Post("/", handlers.HandleBadRequest)
