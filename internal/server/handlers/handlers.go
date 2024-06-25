@@ -135,8 +135,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	if res.Header().Get("Content-Type") != "application/json" {
+	if req.Header.Get("Content-Type") != "application/json" {
 		log.Error("incorrect Content-Type")
 		res.WriteHeader(http.StatusBadRequest)
 		return
