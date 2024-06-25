@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 )
@@ -28,10 +27,8 @@ func activateEnvFlags() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(envReportInterval)
 		ReportInterval = envReportInterval
 	}
-	fmt.Println(ReportInterval)
 	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
 		envPollInterval, err := strconv.Atoi(envPollInterval)
 		if err != nil {

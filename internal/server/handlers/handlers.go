@@ -66,7 +66,6 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 	}
 
 	h.storage.SetGauge(urlParams.metricName, valueFloat)
-	fmt.Println(h.storage)
 	res.WriteHeader(http.StatusOK)
 }
 
