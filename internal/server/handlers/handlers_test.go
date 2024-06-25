@@ -233,9 +233,10 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.UpdateJSON(w, request)
 
-			req := w.Result()
+			response := w.Result()
+			defer response.Body.Close()
 
-			_, err := buf.ReadFrom(req.Body)
+			_, err := buf.ReadFrom(response.Body)
 			if err != nil {
 				log.Error(err)
 			}
@@ -245,7 +246,7 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 			if err = json.Unmarshal(buf.Bytes(), &metric); err != nil {
 				log.Error(err)
 			}
-			require.Equal(t, req.StatusCode, tt.wantStatusCode)
+			require.Equal(t, response.StatusCode, tt.wantStatusCode)
 			if tt.wantValue != (metrics.Metric{}) {
 				require.Equal(t, tt.args.body, tt.wantValue)
 			}
