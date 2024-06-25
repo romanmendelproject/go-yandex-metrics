@@ -29,7 +29,9 @@ func (m *Metrics) Update() error {
 	m.Data = []Metric{
 		{ID: "Alloc", MType: "gauge", Value: float64(runtimeMetrics.Alloc)},
 		{ID: "BuckHashSys", MType: "gauge", Value: float64(runtimeMetrics.BuckHashSys)},
+		{ID: "Frees", MType: "gauge", Value: float64(runtimeMetrics.Frees)},
 		{ID: "GCCPUFraction", MType: "gauge", Value: float64(runtimeMetrics.GCCPUFraction)},
+		{ID: "GCSys", MType: "gauge", Value: float64(runtimeMetrics.GCSys)},
 		{ID: "HeapAlloc", MType: "gauge", Value: float64(runtimeMetrics.HeapAlloc)},
 		{ID: "HeapIdle", MType: "gauge", Value: float64(runtimeMetrics.HeapIdle)},
 		{ID: "HeapInuse", MType: "gauge", Value: float64(runtimeMetrics.HeapInuse)},
@@ -41,6 +43,7 @@ func (m *Metrics) Update() error {
 		{ID: "MCacheInuse", MType: "gauge", Value: float64(runtimeMetrics.MCacheInuse)},
 		{ID: "MCacheSys", MType: "gauge", Value: float64(runtimeMetrics.MCacheSys)},
 		{ID: "MSpanInuse", MType: "gauge", Value: float64(runtimeMetrics.MSpanInuse)},
+		{ID: "MSpanSys", MType: "gauge", Value: float64(runtimeMetrics.MSpanSys)},
 		{ID: "Mallocs", MType: "gauge", Value: float64(runtimeMetrics.Mallocs)},
 		{ID: "NumForcedGC", MType: "gauge", Value: float64(runtimeMetrics.NumForcedGC)},
 		{ID: "NumGC", MType: "gauge", Value: float64(runtimeMetrics.NumGC)},
