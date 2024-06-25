@@ -45,6 +45,7 @@ func (m *Metrics) Update() error {
 		{ID: "MSpanInuse", MType: "gauge", Value: float64(runtimeMetrics.MSpanInuse)},
 		{ID: "MSpanSys", MType: "gauge", Value: float64(runtimeMetrics.MSpanSys)},
 		{ID: "Mallocs", MType: "gauge", Value: float64(runtimeMetrics.Mallocs)},
+		{ID: "NextGC", MType: "gauge", Value: float64(runtimeMetrics.NextGC)},
 		{ID: "NumForcedGC", MType: "gauge", Value: float64(runtimeMetrics.NumForcedGC)},
 		{ID: "NumGC", MType: "gauge", Value: float64(runtimeMetrics.NumGC)},
 		{ID: "OtherSys", MType: "gauge", Value: float64(runtimeMetrics.OtherSys)},
