@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -37,8 +36,7 @@ func sendMetric(body []byte) error {
 	if err != nil {
 		return err
 	}
-	bodyStr, _ := ioutil.ReadAll(res.Body)
-	fmt.Println("response Body:", string(bodyStr))
+
 	if err = res.Body.Close(); err != nil {
 		return err
 	}
