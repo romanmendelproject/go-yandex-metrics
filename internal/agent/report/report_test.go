@@ -18,7 +18,7 @@ func Test_ReportMetrics(t *testing.T) {
 	config.ParseFlags()
 	type args struct {
 		name   string
-		metric metrics.MetricGauge
+		metric metrics.Metric
 	}
 	tests := []struct {
 		name    string
@@ -27,7 +27,7 @@ func Test_ReportMetrics(t *testing.T) {
 	}{
 		{
 			name:    "Good Gauge Test",
-			args:    args{"TestGauge", metrics.MetricGauge{Type: "gauge", Value: float64(0.5)}},
+			args:    args{"TestGauge", metrics.Metric{ID: "test", MType: "gauge", Value: float64(0.5)}},
 			wantErr: false,
 		},
 	}
@@ -46,12 +46,9 @@ func Test_ReportMetrics(t *testing.T) {
 	server.Start()
 	defer server.Close()
 	for _, tt := range tests {
-		var metrics metrics.Metrics
-		metrics.Init()
-		metrics.DataGauge[tt.args.name] = tt.args.metric
-
+		data := []metrics.Metric{tt.args.metric}
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ReportMetrics(&metrics); (err != nil) != tt.wantErr {
+			if err := ReportMetrics(data); (err != nil) != tt.wantErr {
 				t.Errorf("reportMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
