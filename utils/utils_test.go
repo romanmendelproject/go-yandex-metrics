@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 import (
 	"reflect"
@@ -21,9 +21,9 @@ func TestParseURLUpdate(t *testing.T) {
 				url: "/update/gauge/test/0.1",
 			},
 			want: URLParams{
-				metricType:  "gauge",
-				metricName:  "test",
-				metricValue: "0.1",
+				MetricType:  "gauge",
+				MetricName:  "test",
+				MetricValue: "0.1",
 			},
 			wantErr: false,
 		},
@@ -33,9 +33,9 @@ func TestParseURLUpdate(t *testing.T) {
 				url: "/update/gauge/test/1",
 			},
 			want: URLParams{
-				metricType:  "gauge",
-				metricName:  "test",
-				metricValue: "1",
+				MetricType:  "gauge",
+				MetricName:  "test",
+				MetricValue: "1",
 			},
 			wantErr: false,
 		},

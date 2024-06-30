@@ -8,6 +8,7 @@ import (
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
+	"github.com/romanmendelproject/go-yandex-metrics/utils"
 )
 
 func handlerServer(res http.ResponseWriter, req *http.Request) {
@@ -27,7 +28,7 @@ func Test_ReportMetrics(t *testing.T) {
 	}{
 		{
 			name:    "Good Gauge Test",
-			args:    args{"TestGauge", metrics.Metric{ID: "test", MType: "gauge", Value: float64(0.5)}},
+			args:    args{"TestGauge", metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))}},
 			wantErr: false,
 		},
 	}

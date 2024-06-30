@@ -10,14 +10,15 @@ import (
 	"strings"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
+	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type Metric struct {
-	ID    string  `json:"id"`              // имя метрики
-	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 type Storage interface {
@@ -52,20 +53,20 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	urlParams, err := ParseURLUpdate(req.URL.Path)
+	urlParams, err := utils.ParseURLUpdate(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	valueFloat, err := strconv.ParseFloat(strings.TrimSpace(urlParams.metricValue), 64)
+	valueFloat, err := strconv.ParseFloat(strings.TrimSpace(urlParams.MetricValue), 64)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	h.storage.SetGauge(urlParams.metricName, valueFloat)
+	h.storage.SetGauge(urlParams.MetricName, valueFloat)
 	res.WriteHeader(http.StatusOK)
 }
 
@@ -76,33 +77,33 @@ func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	urlParams, err := ParseURLUpdate(req.URL.Path)
+	urlParams, err := utils.ParseURLUpdate(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	valueInt, err := strconv.ParseInt(urlParams.metricValue, 10, 64)
+	valueInt, err := strconv.ParseInt(urlParams.MetricValue, 10, 64)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	h.storage.SetCounter(urlParams.metricName, valueInt)
+	h.storage.SetCounter(urlParams.MetricName, valueInt)
 
 	res.WriteHeader(http.StatusOK)
 }
 
 func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request) {
-	urlParams, err := ParseURLValue(req.URL.Path)
+	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	value, err := h.storage.GetGauge(urlParams.metricName)
+	value, err := h.storage.GetGauge(urlParams.MetricName)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
@@ -112,13 +113,13 @@ func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request)
 }
 
 func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Request) {
-	urlParams, err := ParseURLValue(req.URL.Path)
+	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	value, err := h.storage.GetCounter(urlParams.metricName)
+	value, err := h.storage.GetCounter(urlParams.MetricName)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
@@ -157,7 +158,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
+	fmt.Println(metric)
 	switch metric.MType {
 	case "gauge":
 		value, err := h.storage.GetGauge(metric.ID)
@@ -166,11 +167,13 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		metricResponse = Metric{
 			ID:    metric.ID,
 			MType: "gauge",
-			Value: value,
+			Value: &value,
 		}
+
 	case "counter":
 		value, err := h.storage.GetCounter(metric.ID)
 		if err != nil {
@@ -181,7 +184,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		metricResponse = Metric{
 			ID:    metric.ID,
 			MType: "counter",
-			Delta: value,
+			Delta: &value,
 		}
 	default:
 		log.Error("incorrect type data")
@@ -194,6 +197,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fmt.Println(metricResponse)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	res.Write(resp)
@@ -221,7 +225,7 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
+	fmt.Println("test", req.Body)
 	_, err := buf.ReadFrom(req.Body)
 	if err != nil {
 		log.Error(err)
@@ -244,15 +248,15 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 
 	switch metric.MType {
 	case "gauge":
-		h.storage.SetGauge(metric.ID, metric.Value)
+		h.storage.SetGauge(metric.ID, *metric.Value)
 	case "counter":
-		h.storage.SetCounter(metric.ID, metric.Delta)
+		h.storage.SetCounter(metric.ID, *metric.Delta)
 		counter, err := h.storage.GetCounter(metric.ID)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		metric.Delta = counter
+		metric.Delta = &counter
 	default:
 		log.Error("incorrect type data")
 		res.WriteHeader(http.StatusBadRequest)

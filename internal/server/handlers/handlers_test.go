@@ -9,6 +9,7 @@ import (
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
+	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -162,10 +163,10 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 			args: args{
 				httpMethod: http.MethodPost,
 				path:       "/update/",
-				body:       metrics.Metric{ID: "test", MType: "gauge", Value: float64(0.5)},
+				body:       metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
 			},
 			wantStatusCode: http.StatusOK,
-			wantValue:      metrics.Metric{ID: "test", MType: "gauge", Value: float64(0.5)},
+			wantValue:      metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
 		},
 		{
 			name: "Bad (Incorrect type)",
@@ -182,7 +183,7 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 			args: args{
 				httpMethod: http.MethodGet,
 				path:       "/update/",
-				body:       metrics.Metric{ID: "test", MType: "gauge", Value: float64(0.5)},
+				body:       metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
 			},
 			wantStatusCode: http.StatusBadRequest,
 			wantValue:      metrics.Metric{},
