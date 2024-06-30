@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/compress"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
 )
@@ -9,11 +10,11 @@ import (
 func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(logger.RequestLogger)
+	r.Use(compress.GzipMiddleware)
 
 	r.Get("/", handler.AllData)
 	r.Post("/", handlers.HandleBadRequest)
 
-	// TODO Не разобрался сходу как прокинуть параметры {mname} и т.д. в handlers.ValueGauge
 	r.Route("/value", func(r chi.Router) {
 		r.Get("/gauge/{mname}", handler.ValueGauge)
 		r.Get("/counter/{mname}", handler.ValueCounter)

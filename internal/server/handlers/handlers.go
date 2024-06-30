@@ -158,7 +158,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(metric)
+
 	switch metric.MType {
 	case "gauge":
 		value, err := h.storage.GetGauge(metric.ID)
@@ -197,7 +197,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(metricResponse)
+
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	res.Write(resp)
@@ -225,7 +225,7 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println("test", req.Body)
+
 	_, err := buf.ReadFrom(req.Body)
 	if err != nil {
 		log.Error(err)

@@ -2,6 +2,7 @@ package report
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,15 +32,26 @@ func ReportMetrics(data []metrics.Metric) error {
 
 func sendMetric(body []byte) error {
 	url := fmt.Sprintf("http://%s/update/", config.FlagReqAddr)
+	var requestBody bytes.Buffer
 
-	res, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	gz := gzip.NewWriter(&requestBody)
+	gz.Write(body)
+	gz.Close()
+
+	req, err := http.NewRequest("POST", url, &requestBody)
 	if err != nil {
-		return err
+		log.Error(err)
 	}
 
-	if err = res.Body.Close(); err != nil {
-		return err
+	req.Header.Add("content-type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Error(err)
 	}
+
+	defer res.Body.Close()
 
 	return nil
 }
