@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
@@ -59,6 +58,6 @@ func (m *Metrics) Update() error {
 		{ID: "RandomValue", MType: "gauge", Value: utils.GetFloatPtr(rand.Float64())},
 		{ID: "PollCount", MType: "counter", Delta: &m.PollCount},
 	}
-	fmt.Println(m.Data)
+
 	return nil
 }

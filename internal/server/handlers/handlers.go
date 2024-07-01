@@ -209,6 +209,7 @@ func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	for i, value := range values {
 		io.WriteString(res, fmt.Sprintf("%d type = %s  name = %s value = %v", i, value.Type, value.Name, value.Value))
 	}
+	res.Header().Set("Content-Type", "text/html")
 }
 
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
