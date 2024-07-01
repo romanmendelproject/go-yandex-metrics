@@ -206,10 +206,10 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	values := h.storage.GetAll()
 
+	res.Header().Set("Content-Type", "text/html")
 	for i, value := range values {
 		io.WriteString(res, fmt.Sprintf("%d type = %s  name = %s value = %v", i, value.Type, value.Name, value.Value))
 	}
-	res.Header().Set("Content-Type", "text/html")
 }
 
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
