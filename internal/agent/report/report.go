@@ -46,12 +46,10 @@ func sendMetric(body []byte) error {
 	req.Header.Add("content-type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 
-	res, err := http.DefaultClient.Do(req)
+	_, err = http.DefaultClient.Do(req)
 	if err != nil {
 		log.Error(err)
 	}
-
-	defer res.Body.Close()
 
 	return nil
 }
