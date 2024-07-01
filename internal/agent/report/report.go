@@ -38,6 +38,8 @@ func sendMetric(body []byte) error {
 	gz.Write(body)
 	gz.Close()
 
+	client := http.Client{}
+
 	req, err := http.NewRequest("POST", url, &requestBody)
 	if err != nil {
 		log.Error(err)
@@ -46,9 +48,14 @@ func sendMetric(body []byte) error {
 	req.Header.Add("content-type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 
-	_, err = http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		log.Error(err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("not expected status code: %d", resp.StatusCode)
 	}
 
 	return nil
