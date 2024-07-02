@@ -14,13 +14,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Metric struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
-
 type Storage interface {
 	SetGauge(name string, value float64)
 	SetCounter(name string, value int64)
@@ -129,7 +122,7 @@ func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Reques
 }
 
 func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) {
-	var metric, metricResponse Metric
+	var metric, metricResponse storage.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")
@@ -168,7 +161,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		metricResponse = Metric{
+		metricResponse = storage.Metric{
 			ID:    metric.ID,
 			MType: "gauge",
 			Value: &value,
@@ -181,7 +174,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
-		metricResponse = Metric{
+		metricResponse = storage.Metric{
 			ID:    metric.ID,
 			MType: "counter",
 			Delta: &value,
@@ -214,7 +207,7 @@ func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
-	var metric Metric
+	var metric storage.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")

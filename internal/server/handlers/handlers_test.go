@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
@@ -57,7 +56,7 @@ func TestServiceHandlers_UpdateGauge(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 		},
 	}
-	storage := storage.NewMemStorage()
+	storage := storage.NewMemStorage("test")
 
 	handler := NewHandlers(storage)
 
@@ -127,7 +126,7 @@ func TestServiceHandlers_UpdateCounter(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 		},
 	}
-	storage := storage.NewMemStorage()
+	storage := storage.NewMemStorage("test")
 
 	handler := NewHandlers(storage)
 
@@ -156,37 +155,37 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 		name           string
 		args           args
 		wantStatusCode int
-		wantValue      metrics.Metric
+		wantValue      storage.Metric
 	}{
 		{
 			name: "Good update counter",
 			args: args{
 				httpMethod: http.MethodPost,
 				path:       "/update/",
-				body:       metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
+				body:       storage.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
 			},
 			wantStatusCode: http.StatusOK,
-			wantValue:      metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
+			wantValue:      storage.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
 		},
 		{
 			name: "Bad (Incorrect type)",
 			args: args{
 				httpMethod: http.MethodPost,
 				path:       "/update/",
-				body:       metrics.Metric{ID: "test"},
+				body:       storage.Metric{ID: "test"},
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantValue:      metrics.Metric{},
+			wantValue:      storage.Metric{},
 		},
 		{
 			name: "Bad (bad http method)",
 			args: args{
 				httpMethod: http.MethodGet,
 				path:       "/update/",
-				body:       metrics.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
+				body:       storage.Metric{ID: "test", MType: "gauge", Value: utils.GetFloatPtr(float64(0.5))},
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantValue:      metrics.Metric{},
+			wantValue:      storage.Metric{},
 		},
 		{
 			name: "Bad (text value)",
@@ -200,7 +199,7 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 				},
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantValue:      metrics.Metric{},
+			wantValue:      storage.Metric{},
 		},
 		{
 			name: "Bad (float64 value)",
@@ -214,15 +213,15 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 				},
 			},
 			wantStatusCode: http.StatusBadRequest,
-			wantValue:      metrics.Metric{},
+			wantValue:      storage.Metric{},
 		},
 	}
 
-	stor := storage.NewMemStorage()
+	stor := storage.NewMemStorage("test")
 
 	handler := NewHandlers(stor)
 	var buf bytes.Buffer
-	var metric Metric
+	var metric storage.Metric
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -248,7 +247,7 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 				log.Error(err)
 			}
 			require.Equal(t, response.StatusCode, tt.wantStatusCode)
-			if tt.wantValue != (metrics.Metric{}) {
+			if tt.wantValue != (storage.Metric{}) {
 				require.Equal(t, tt.args.body, tt.wantValue)
 			}
 		})
