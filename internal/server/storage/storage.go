@@ -87,7 +87,7 @@ func (m *MemStorage) GetAll() []Value {
 }
 
 func (m *MemStorage) SaveToFile() error {
-	file, err := os.OpenFile(m.filePath, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.Create(m.filePath)
 
 	if err != nil {
 		return err
@@ -138,7 +138,6 @@ func toJSON(m *MemStorage) ([]byte, error) {
 
 	for k, v := range m.gauge {
 		var m Metric
-
 		m.ID = k
 		m.MType = "gauge"
 		m.Value = &v
@@ -152,7 +151,6 @@ func toJSON(m *MemStorage) ([]byte, error) {
 		m.ID = k
 		m.MType = "counter"
 		m.Delta = &v
-
 		metrics = append(metrics, m)
 	}
 
