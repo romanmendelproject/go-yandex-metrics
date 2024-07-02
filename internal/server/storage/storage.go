@@ -140,17 +140,18 @@ func toJSON(m *MemStorage) ([]byte, error) {
 		var m Metric
 		m.ID = k
 		m.MType = "gauge"
-		m.Value = &v
+		newValue := v
+		m.Value = &newValue
 
 		metrics = append(metrics, m)
 	}
 
 	for k, v := range m.counter {
 		var m Metric
-
 		m.ID = k
 		m.MType = "counter"
-		m.Delta = &v
+		newDelta := v
+		m.Delta = &newDelta
 		metrics = append(metrics, m)
 	}
 

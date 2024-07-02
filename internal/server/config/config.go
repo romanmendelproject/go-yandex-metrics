@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"os"
+	"strconv"
 )
 
 var (
@@ -28,13 +29,14 @@ func activateEnvFlags() {
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		FlagRunAddr = envRunAddr
 	}
-	// if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
-	// 	StoreInterval = int64(envStoreInterval)
-	// }
-	// if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
-	// 	FileStoragePath = envFileStoragePath
-	// }
-	// if envRestore := os.Getenv("RESTORE"); envRestore != "" {
-	// 	Restore = envRestore
-	// }
+
+	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
+		StoreInterval, _ = strconv.Atoi(envStoreInterval)
+	}
+	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
+		FileStoragePath = envFileStoragePath
+	}
+	if envRestore := os.Getenv("RESTORE"); envRestore != "" {
+		Restore = true
+	}
 }
