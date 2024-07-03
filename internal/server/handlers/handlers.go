@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
+	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,21 +46,20 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	urlParams, err := ParseURLUpdate(req.URL.Path)
+	urlParams, err := utils.ParseURLUpdate(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	valueFloat, err := strconv.ParseFloat(strings.TrimSpace(urlParams.metricValue), 64)
+	valueFloat, err := strconv.ParseFloat(strings.TrimSpace(urlParams.MetricValue), 64)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	h.storage.SetGauge(urlParams.metricName, valueFloat)
-	fmt.Println(h.storage)
+	h.storage.SetGauge(urlParams.MetricName, valueFloat)
 	res.WriteHeader(http.StatusOK)
 }
 
@@ -68,33 +70,33 @@ func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	urlParams, err := ParseURLUpdate(req.URL.Path)
+	urlParams, err := utils.ParseURLUpdate(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	valueInt, err := strconv.ParseInt(urlParams.metricValue, 10, 64)
+	valueInt, err := strconv.ParseInt(urlParams.MetricValue, 10, 64)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	h.storage.SetCounter(urlParams.metricName, valueInt)
+	h.storage.SetCounter(urlParams.MetricName, valueInt)
 
 	res.WriteHeader(http.StatusOK)
 }
 
 func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request) {
-	urlParams, err := ParseURLValue(req.URL.Path)
+	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	value, err := h.storage.GetGauge(urlParams.metricName)
+	value, err := h.storage.GetGauge(urlParams.MetricName)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
@@ -104,13 +106,13 @@ func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request)
 }
 
 func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Request) {
-	urlParams, err := ParseURLValue(req.URL.Path)
+	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	value, err := h.storage.GetCounter(urlParams.metricName)
+	value, err := h.storage.GetCounter(urlParams.MetricName)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
@@ -119,10 +121,149 @@ func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Reques
 	io.WriteString(res, fmt.Sprintf("%d", value))
 }
 
+func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) {
+	var metric, metricResponse storage.Metric
+	var buf bytes.Buffer
+	if req.Method != http.MethodPost {
+		log.Error("incorrect http method")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if req.Header.Get("Content-Type") != "application/json" {
+		log.Error("incorrect Content-Type")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &metric); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if metric.ID == "" {
+		log.Error("incorrect id data")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch metric.MType {
+	case "gauge":
+		value, err := h.storage.GetGauge(metric.ID)
+		if err != nil {
+			log.Error(err)
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		metricResponse = storage.Metric{
+			ID:    metric.ID,
+			MType: "gauge",
+			Value: &value,
+		}
+
+	case "counter":
+		value, err := h.storage.GetCounter(metric.ID)
+		if err != nil {
+			log.Error(err)
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		metricResponse = storage.Metric{
+			ID:    metric.ID,
+			MType: "counter",
+			Delta: &value,
+		}
+	default:
+		log.Error("incorrect type data")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	resp, err := json.Marshal(metricResponse)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(resp)
+}
+
 func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	values := h.storage.GetAll()
 
+	res.Header().Set("Content-Type", "text/html")
+	res.WriteHeader(http.StatusOK)
 	for i, value := range values {
 		io.WriteString(res, fmt.Sprintf("%d type = %s  name = %s value = %v", i, value.Type, value.Name, value.Value))
 	}
+}
+
+func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
+	var metric storage.Metric
+	var buf bytes.Buffer
+	if req.Method != http.MethodPost {
+		log.Error("incorrect http method")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if req.Header.Get("Content-Type") != "application/json" {
+		log.Error("incorrect Content-Type")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err := buf.ReadFrom(req.Body)
+	if err != nil {
+		log.Error(err)
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &metric); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		log.Error(err)
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if metric.ID == "" {
+		log.Error("incorrect id data")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch metric.MType {
+	case "gauge":
+		h.storage.SetGauge(metric.ID, *metric.Value)
+	case "counter":
+		h.storage.SetCounter(metric.ID, *metric.Delta)
+		counter, err := h.storage.GetCounter(metric.ID)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		metric.Delta = &counter
+	default:
+		log.Error("incorrect type data")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	resp, err := json.Marshal(metric)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(resp)
 }

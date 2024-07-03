@@ -12,7 +12,6 @@ func main() {
 	config.ParseFlags()
 
 	var metrics metrics.Metrics
-	metrics.Init()
 
 	for {
 		go func() {
@@ -22,7 +21,7 @@ func main() {
 			}
 		}()
 
-		if err := report.ReportMetrics(&metrics); err != nil {
+		if err := report.ReportMetrics(metrics.Data); err != nil {
 			log.Error(err)
 		}
 	}

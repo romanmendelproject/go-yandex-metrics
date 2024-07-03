@@ -26,7 +26,7 @@ func TestMemStorage_SetGauge(t *testing.T) {
 		},
 	}
 
-	storage := NewMemStorage()
+	storage := NewMemStorage("test")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetGauge(tt.args.name, tt.args.value)
@@ -55,7 +55,7 @@ func TestMemStorage_SetCount(t *testing.T) {
 		},
 	}
 
-	storage := NewMemStorage()
+	storage := NewMemStorage("test")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetCounter(tt.args.name, tt.args.value)

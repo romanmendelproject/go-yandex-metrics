@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 )
 
 type URLParams struct {
-	metricType, metricName, metricValue string
+	MetricType, MetricName, MetricValue string
 }
 
 func ParseURLUpdate(url string) (URLParams, error) {
@@ -16,9 +16,9 @@ func ParseURLUpdate(url string) (URLParams, error) {
 	if len(urlData) != 4 {
 		return urlParams, errors.New("error parameters coumt from URL")
 	}
-	urlParams.metricType = urlData[1]
-	urlParams.metricName = urlData[2]
-	urlParams.metricValue = urlData[3]
+	urlParams.MetricType = urlData[1]
+	urlParams.MetricName = urlData[2]
+	urlParams.MetricValue = urlData[3]
 
 	return urlParams, nil
 }
@@ -30,8 +30,12 @@ func ParseURLValue(url string) (URLParams, error) {
 	if len(urlData) != 3 {
 		return urlParams, errors.New("error parameters coumt from URL")
 	}
-	urlParams.metricType = urlData[1]
-	urlParams.metricName = urlData[2]
+	urlParams.MetricType = urlData[1]
+	urlParams.MetricName = urlData[2]
 
 	return urlParams, nil
+}
+
+func GetFloatPtr(v float64) *float64 {
+	return &v
 }
