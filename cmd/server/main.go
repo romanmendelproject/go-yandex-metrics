@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -21,7 +20,7 @@ func main() {
 	logger.SetLogLevel(config.LogLevel)
 	storage := storage.NewMemStorage(config.FileStoragePath)
 
-	ps := fmt.Sprintf("postgres://username:userpassword@localhost:5432/dbname")
+	ps := "postgres://username:userpassword@localhost:5432/dbname"
 	conn, err := pgx.Connect(context.Background(), ps)
 	if err != nil {
 		log.Error(err)
