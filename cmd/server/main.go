@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
@@ -18,7 +21,14 @@ func main() {
 	logger.SetLogLevel(config.LogLevel)
 	storage := storage.NewMemStorage(config.FileStoragePath)
 
-	handler := handlers.NewHandlers(storage)
+	ps := fmt.Sprintf("postgres://username:userpassword@localhost:5432/dbname")
+	conn, err := pgx.Connect(context.Background(), ps)
+	if err != nil {
+		log.Error(err)
+	}
+	defer conn.Close(context.Background())
+
+	handler := handlers.NewHandlers(storage, conn)
 	r := router.NewRouter(handler)
 
 	if config.Restore {

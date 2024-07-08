@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
@@ -23,12 +25,14 @@ type Storage interface {
 }
 
 type ServiceHandlers struct {
-	storage Storage
+	storage    Storage
+	db_storage *pgx.Conn
 }
 
-func NewHandlers(storage Storage) *ServiceHandlers {
+func NewHandlers(storage Storage, db_storage *pgx.Conn) *ServiceHandlers {
 	return &ServiceHandlers{
-		storage: storage,
+		storage:    storage,
+		db_storage: db_storage,
 	}
 }
 
@@ -204,6 +208,16 @@ func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	for i, value := range values {
 		io.WriteString(res, fmt.Sprintf("%d type = %s  name = %s value = %v", i, value.Type, value.Name, value.Value))
 	}
+}
+
+func (h *ServiceHandlers) Ping(res http.ResponseWriter, req *http.Request) {
+	err := h.db_storage.Ping(context.Background())
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
 }
 
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
