@@ -49,7 +49,7 @@ func Test_ReportMetrics(t *testing.T) {
 	for _, tt := range tests {
 		data := []metrics.Metric{tt.args.metric}
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ReportMetrics(data); (err != nil) != tt.wantErr {
+			if err := ReportSingleMetric(data); (err != nil) != tt.wantErr {
 				t.Errorf("reportMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

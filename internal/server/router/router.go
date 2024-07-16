@@ -30,7 +30,7 @@ func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 		r.Post("/", handler.UpdateJSON)
 		r.Post("/*", handlers.HandleBadRequest)
 	})
-	r.Post("/updates", handler.UpdateBatch)
+	r.Post("/updates/", handler.UpdateBatch)
 	r.Get("/ping", handler.Ping)
 
 	return r

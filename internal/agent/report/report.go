@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
@@ -14,13 +13,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ReportMetrics(data []metrics.Metric) error {
-	time.Sleep(time.Second * time.Duration(config.ReportInterval))
+func ReportSingeMetric(data []metrics.Metric) error {
+	for _, v := range data {
+		jsonValue, err := json.Marshal(v)
+		if err != nil {
+			log.Error(err)
+		} else {
+			url := fmt.Sprintf("http://%s/update/", config.FlagReqAddr)
+			if err := sendMetric(jsonValue, url); err != nil {
+				log.Error(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func ReportBatchMetrics(data []metrics.Metric) error {
 	jsonValue, err := json.Marshal(data)
 	if err != nil {
 		log.Error(err)
 	} else {
-		if err := sendMetric(jsonValue); err != nil {
+		url := fmt.Sprintf("http://%s/updates/", config.FlagReqAddr)
+		if err := sendMetric(jsonValue, url); err != nil {
 			log.Error(err)
 		}
 	}
@@ -28,8 +43,7 @@ func ReportMetrics(data []metrics.Metric) error {
 	return nil
 }
 
-func sendMetric(body []byte) error {
-	url := fmt.Sprintf("http://%s/updates", config.FlagReqAddr)
+func sendMetric(body []byte, url string) error {
 	var requestBody bytes.Buffer
 
 	gz := gzip.NewWriter(&requestBody)
