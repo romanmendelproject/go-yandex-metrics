@@ -7,10 +7,10 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose"
 
-	goose "github.com/pressly/goose/v3"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/server/db_storage"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
@@ -32,7 +32,7 @@ func main() {
 	if config.DBDSN != "" {
 		// ps := "postgres://username:userpassword@localhost:5432/dbname"
 
-		database := db_storage.NewDBStorage(ctx, config.DBDSN)
+		database := dbstorage.NewDBStorage(ctx, config.DBDSN)
 		defer database.Close()
 
 		db, err := sql.Open("postgres", config.DBDSN)
@@ -44,6 +44,7 @@ func main() {
 		if err := goose.Up(db, "./internal/server/migrations"); err != nil {
 			log.Error("Failed to run migrations", "error", err)
 		}
+
 		handler = handlers.NewHandlers(database)
 		runServer(handler)
 	} else {
@@ -71,7 +72,8 @@ func main() {
 
 func runServer(handler *handlers.ServiceHandlers) {
 	r := router.NewRouter(handler)
-	go func() {
+	func() {
+
 		err := http.ListenAndServe(config.FlagRunAddr, r)
 		if err != nil {
 			panic(err)
