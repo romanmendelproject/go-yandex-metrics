@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 
 	log "github.com/sirupsen/logrus"
 )
+
+var retries = []int{1, 3, 5}
 
 func ReportSingleMetric(data []metrics.Metric) error {
 	for _, v := range data {
@@ -61,15 +64,20 @@ func sendMetric(body []byte, url string) error {
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
+	for _, timeSleep := range retries {
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Errorf("Failed to send collectors to server: %s. Retrying after %ds...", err, timeSleep)
+			time.Sleep(time.Duration(timeSleep) * time.Second)
+			continue
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("not expected status code: %d", resp.StatusCode)
+		} else {
+			return nil
+		}
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("not expected status code: %d", resp.StatusCode)
-	}
-
-	return nil
+	return err
 }
