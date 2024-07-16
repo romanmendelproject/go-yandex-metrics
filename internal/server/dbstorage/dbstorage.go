@@ -10,16 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	log "github.com/sirupsen/logrus"
 )
-
-type Metric struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
 
 type DBStorage struct {
 	db *pgxpool.Pool
@@ -195,4 +189,57 @@ func (pg *DBStorage) GetAll(ctx context.Context) ([]storage.Value, error) {
 	}
 
 	return values, nil
+}
+
+func (pg *DBStorage) SetBatch(ctx context.Context, metrics []metrics.Metric) error {
+	tx, err := pg.db.BeginTx(ctx, pgx.TxOptions{})
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	query := `INSERT INTO metrics (type, name, counter, gauge) VALUES ($1, $2, $3, $4)`
+
+	for _, metric := range metrics {
+		if metric.MType == "counter" {
+			var oldCounter int64
+			if err := tx.QueryRow(ctx, `SELECT counter FROM metrics WHERE name=$1 AND type = 'counter'`, metric.ID).Scan(&oldCounter); err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					if _, err := tx.Exec(ctx, query, metric.MType, metric.ID, metric.Delta, metric.Value); err != nil {
+						log.Error(err)
+						return err
+					}
+					continue
+				}
+
+				log.Error(err)
+				return err
+			}
+
+			*metric.Delta += oldCounter
+
+			if _, err := tx.Exec(ctx, `UPDATE metrics SET counter = $1 WHERE type = 'counter' AND name = $2`, metric.Delta, metric.ID); err != nil {
+				log.Error(err)
+				return err
+			}
+		} else if metric.MType == "gauge" {
+			ra, err := tx.Exec(ctx, `UPDATE metrics SET gauge = $1 WHERE type = 'gauge' AND name = $2`, metric.Value, metric.ID)
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+
+			if ra.RowsAffected() == 0 {
+				if _, err := tx.Exec(ctx, query, metric.MType, metric.ID, metric.Delta, metric.Value); err != nil {
+					log.Error(err)
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }

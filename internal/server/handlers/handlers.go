@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +22,7 @@ type Storage interface {
 	GetGauge(ctx context.Context, name string) (float64, error)
 	GetCounter(ctx context.Context, name string) (int64, error)
 	GetAll(ctx context.Context) ([]storage.Value, error)
+	SetBatch(ctx context.Context, metrics []metrics.Metric) error
 	Ping(ctx context.Context) error
 }
 
@@ -126,7 +128,7 @@ func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Reques
 }
 
 func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) {
-	var metric, metricResponse storage.Metric
+	var metric, metricResponse metrics.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")
@@ -164,7 +166,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		metricResponse = storage.Metric{
+		metricResponse = metrics.Metric{
 			ID:    metric.ID,
 			MType: "gauge",
 			Value: &value,
@@ -177,7 +179,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
-		metricResponse = storage.Metric{
+		metricResponse = metrics.Metric{
 			ID:    metric.ID,
 			MType: "counter",
 			Delta: &value,
@@ -223,7 +225,7 @@ func (h *ServiceHandlers) Ping(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+	var metric metrics.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")
@@ -286,4 +288,26 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	res.Write(resp)
+}
+
+func (h *ServiceHandlers) UpdateBatch(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	var request []metrics.Metric
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		log.Error(err)
+		res.Write([]byte(err.Error()))
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer req.Body.Close()
+
+	err := h.storage.SetBatch(ctx, request)
+	if err != nil {
+		log.Println(err)
+		res.Write([]byte(err.Error()))
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
 }

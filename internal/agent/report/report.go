@@ -16,14 +16,12 @@ import (
 
 func ReportMetrics(data []metrics.Metric) error {
 	time.Sleep(time.Second * time.Duration(config.ReportInterval))
-	for _, v := range data {
-		jsonValue, err := json.Marshal(v)
-		if err != nil {
+	jsonValue, err := json.Marshal(data)
+	if err != nil {
+		log.Error(err)
+	} else {
+		if err := sendMetric(jsonValue); err != nil {
 			log.Error(err)
-		} else {
-			if err := sendMetric(jsonValue); err != nil {
-				log.Error(err)
-			}
 		}
 	}
 
@@ -31,7 +29,7 @@ func ReportMetrics(data []metrics.Metric) error {
 }
 
 func sendMetric(body []byte) error {
-	url := fmt.Sprintf("http://%s/update/", config.FlagReqAddr)
+	url := fmt.Sprintf("http://%s/updates", config.FlagReqAddr)
 	var requestBody bytes.Buffer
 
 	gz := gzip.NewWriter(&requestBody)
