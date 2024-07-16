@@ -33,7 +33,7 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-tickerSingle.C:
-				if err := report.ReportSingeMetric(metrics.Data); err != nil {
+				if err := report.ReportSingleMetric(metrics.Data); err != nil {
 					log.Error(err)
 				}
 

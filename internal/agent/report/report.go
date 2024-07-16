@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ReportSingeMetric(data []metrics.Metric) error {
+func ReportSingleMetric(data []metrics.Metric) error {
 	for _, v := range data {
 		jsonValue, err := json.Marshal(v)
 		if err != nil {
