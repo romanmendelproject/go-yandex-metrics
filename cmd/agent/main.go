@@ -18,8 +18,8 @@ func main() {
 
 	ctx := context.Background()
 
-	tickerSingle := time.NewTicker(time.Duration(config.ReportInterval) * time.Second)
-	tickerBatch := time.NewTicker(time.Duration(config.ReportInterval) * time.Second)
+	tickerSingle := time.NewTicker(time.Duration(config.ReportSingleInterval) * time.Second)
+	tickerBatch := time.NewTicker(time.Duration(config.ReportBatchInterval) * time.Second)
 
 	for {
 		go func() {
