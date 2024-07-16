@@ -15,8 +15,8 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 
-	"github.com/pressly/goose"
-	_ "github.com/romanmendelproject/go-yandex-metrics/migrations"
+	"github.com/pressly/goose/v3"
+	_ "github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage/migrations"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -41,7 +41,7 @@ func main() {
 		}
 		defer db.Close()
 
-		if err := goose.Up(db, "./migrations"); err != nil {
+		if err := goose.Up(db, "./internal/server/dbstorage/migrations"); err != nil {
 			log.Error("Failed to run migrations", "error", err)
 		}
 

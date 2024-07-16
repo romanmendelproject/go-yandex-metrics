@@ -9,10 +9,10 @@ import (
 )
 
 func init() {
-	goose.AddMigrationContext(upInitTables, downInitTables)
+	goose.AddMigrationContext(upInitTable, downInitTable)
 }
 
-func upInitTables(ctx context.Context, tx *sql.Tx) error {
+func upInitTable(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is applied.
 	log.Info("Create DB Table")
 
@@ -34,7 +34,7 @@ func upInitTables(ctx context.Context, tx *sql.Tx) error {
 	return nil
 }
 
-func downInitTables(ctx context.Context, tx *sql.Tx) error {
+func downInitTable(ctx context.Context, tx *sql.Tx) error {
 	// This code is executed when the migration is rolled back.
 	log.Info("Remove DB Table")
 
