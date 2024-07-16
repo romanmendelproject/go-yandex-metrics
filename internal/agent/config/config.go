@@ -13,8 +13,8 @@ var PollInterval int
 
 func ParseFlags() {
 	flag.StringVar(&FlagReqAddr, "a", "localhost:8080", "address and port to run agent")
-	flag.IntVar(&ReportSingleInterval, "r", 5, "send metrics to server")
-	flag.IntVar(&ReportBatchInterval, "b", 20, "send metrics to server")
+	flag.IntVar(&ReportSingleInterval, "r", 10, "send metrics to server")
+	flag.IntVar(&ReportBatchInterval, "b", 40, "send metrics to server")
 	flag.IntVar(&PollInterval, "p", 2, "collect metrics from runtime")
 	flag.Parse()
 	activateEnvFlags()
