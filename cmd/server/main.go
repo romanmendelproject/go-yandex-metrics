@@ -7,7 +7,6 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage"
@@ -16,7 +15,8 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 
-	_ "github.com/romanmendelproject/go-yandex-metrics/internal/server/migrations"
+	"github.com/pressly/goose"
+	_ "github.com/romanmendelproject/go-yandex-metrics/migrations"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -41,7 +41,7 @@ func main() {
 		}
 		defer db.Close()
 
-		if err := goose.Up(db, "./internal/server/migrations"); err != nil {
+		if err := goose.Up(db, "./migrations"); err != nil {
 			log.Error("Failed to run migrations", "error", err)
 		}
 

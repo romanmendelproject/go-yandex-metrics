@@ -3,8 +3,9 @@ package migrations
 import (
 	"context"
 	"database/sql"
-	log "github.com/sirupsen/logrus"
+
 	"github.com/pressly/goose/v3"
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
