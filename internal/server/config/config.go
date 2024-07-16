@@ -42,6 +42,6 @@ func activateEnvFlags() {
 		Restore = true
 	}
 	if envDSN := os.Getenv("DATABASE_DSN"); envDSN != "" {
-		FlagRunAddr = envDSN
+		DBDSN = envDSN
 	}
 }
