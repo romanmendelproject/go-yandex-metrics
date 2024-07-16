@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,17 +10,20 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type Storage interface {
-	SetGauge(name string, value float64)
-	SetCounter(name string, value int64)
-	GetGauge(name string) (float64, error)
-	GetCounter(name string) (int64, error)
-	GetAll() []storage.Value
+	SetGauge(ctx context.Context, name string, value float64) error
+	SetCounter(ctx context.Context, name string, value int64) error
+	GetGauge(ctx context.Context, name string) (float64, error)
+	GetCounter(ctx context.Context, name string) (int64, error)
+	GetAll(ctx context.Context) ([]storage.Value, error)
+	SetBatch(ctx context.Context, metrics []metrics.Metric) error
+	Ping(ctx context.Context) error
 }
 
 type ServiceHandlers struct {
@@ -41,6 +45,8 @@ func HandleStatusNotFound(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")
 		res.WriteHeader(http.StatusBadRequest)
@@ -59,7 +65,7 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	h.storage.SetGauge(urlParams.MetricName, valueFloat)
+	h.storage.SetGauge(ctx, urlParams.MetricName, valueFloat)
 	res.WriteHeader(http.StatusOK)
 }
 
@@ -84,7 +90,7 @@ func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	h.storage.SetCounter(urlParams.MetricName, valueInt)
+	h.storage.SetCounter(req.Context(), urlParams.MetricName, valueInt)
 
 	res.WriteHeader(http.StatusOK)
 }
@@ -96,7 +102,7 @@ func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	value, err := h.storage.GetGauge(urlParams.MetricName)
+	value, err := h.storage.GetGauge(req.Context(), urlParams.MetricName)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
@@ -112,7 +118,7 @@ func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Reques
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-	value, err := h.storage.GetCounter(urlParams.MetricName)
+	value, err := h.storage.GetCounter(req.Context(), urlParams.MetricName)
 	if err != nil {
 		log.Error(err)
 		res.WriteHeader(http.StatusNotFound)
@@ -122,7 +128,7 @@ func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Reques
 }
 
 func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) {
-	var metric, metricResponse storage.Metric
+	var metric, metricResponse metrics.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")
@@ -151,30 +157,29 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 	switch metric.MType {
 	case "gauge":
-		value, err := h.storage.GetGauge(metric.ID)
+		value, err := h.storage.GetGauge(req.Context(), metric.ID)
 		if err != nil {
 			log.Error(err)
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		metricResponse = storage.Metric{
+		metricResponse = metrics.Metric{
 			ID:    metric.ID,
 			MType: "gauge",
 			Value: &value,
 		}
 
 	case "counter":
-		value, err := h.storage.GetCounter(metric.ID)
+		value, err := h.storage.GetCounter(req.Context(), metric.ID)
 		if err != nil {
 			log.Error(err)
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
-		metricResponse = storage.Metric{
+		metricResponse = metrics.Metric{
 			ID:    metric.ID,
 			MType: "counter",
 			Delta: &value,
@@ -197,8 +202,11 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 }
 
 func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
-	values := h.storage.GetAll()
-
+	values, err := h.storage.GetAll(req.Context())
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	res.Header().Set("Content-Type", "text/html")
 	res.WriteHeader(http.StatusOK)
 	for i, value := range values {
@@ -206,8 +214,18 @@ func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (h *ServiceHandlers) Ping(res http.ResponseWriter, req *http.Request) {
+	err := h.storage.Ping(req.Context())
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
+}
+
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+	var metric metrics.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
 		log.Error("incorrect http method")
@@ -243,10 +261,14 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 
 	switch metric.MType {
 	case "gauge":
-		h.storage.SetGauge(metric.ID, *metric.Value)
+		err := h.storage.SetGauge(req.Context(), metric.ID, *metric.Value)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 	case "counter":
-		h.storage.SetCounter(metric.ID, *metric.Delta)
-		counter, err := h.storage.GetCounter(metric.ID)
+		h.storage.SetCounter(req.Context(), metric.ID, *metric.Delta)
+		counter, err := h.storage.GetCounter(req.Context(), metric.ID)
 		if err != nil {
 			log.Error(err)
 			return
@@ -266,4 +288,26 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	res.Write(resp)
+}
+
+func (h *ServiceHandlers) UpdateBatch(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	var request []metrics.Metric
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		log.Error(err)
+		res.Write([]byte(err.Error()))
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer req.Body.Close()
+
+	err := h.storage.SetBatch(ctx, request)
+	if err != nil {
+		log.Println(err)
+		res.Write([]byte(err.Error()))
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
 }
