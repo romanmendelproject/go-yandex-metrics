@@ -46,7 +46,7 @@ func main() {
 		}
 
 		handler = handlers.NewHandlers(database)
-		runServer(handler)
+
 	} else {
 		memStorage := storage.NewMemStorage(config.FileStoragePath)
 		handler = handlers.NewHandlers(memStorage)
@@ -56,21 +56,17 @@ func main() {
 				log.Error(err)
 			}
 		}
-		runServer(handler)
-
-		for {
-			time.Sleep(time.Second * time.Duration(config.StoreInterval))
-			go func() {
+		go func() {
+			for {
+				time.Sleep(time.Second * time.Duration(config.StoreInterval))
 				err := memStorage.SaveToFile()
 				if err != nil {
 					log.Error(err)
 				}
-			}()
-		}
-	}
-}
+			}
+		}()
 
-func runServer(handler *handlers.ServiceHandlers) {
+	}
 	r := router.NewRouter(handler)
 	func() {
 
