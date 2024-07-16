@@ -1,18 +1,15 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
-)
 
-type Metric struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
+)
 
 type MemStorage struct {
 	counter  map[string]int64
@@ -34,19 +31,21 @@ func NewMemStorage(filePath string) *MemStorage {
 	}
 }
 
-func (m *MemStorage) SetGauge(name string, value float64) {
+func (m *MemStorage) SetGauge(ctx context.Context, name string, value float64) error {
 	m.gauge[name] = value
+	return nil
 }
 
-func (m *MemStorage) SetCounter(name string, value int64) {
-	if _, err := m.GetCounter(name); err != nil {
+func (m *MemStorage) SetCounter(ctx context.Context, name string, value int64) error {
+	if _, err := m.GetCounter(ctx, name); err != nil {
 		m.counter[name] = value
 	} else {
 		m.counter[name] += value
 	}
+	return nil
 }
 
-func (m *MemStorage) GetCounter(name string) (int64, error) {
+func (m *MemStorage) GetCounter(ctx context.Context, name string) (int64, error) {
 	value, ok := m.counter[name]
 	if !ok {
 		return 0, errors.New("invalid name of metrics")
@@ -55,7 +54,7 @@ func (m *MemStorage) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
-func (m *MemStorage) GetGauge(name string) (float64, error) {
+func (m *MemStorage) GetGauge(ctx context.Context, name string) (float64, error) {
 	value, ok := m.gauge[name]
 	if !ok {
 		return 0, errors.New("invalid name of metrics")
@@ -64,7 +63,7 @@ func (m *MemStorage) GetGauge(name string) (float64, error) {
 	return value, nil
 }
 
-func (m *MemStorage) GetAll() []Value {
+func (m *MemStorage) GetAll(ctx context.Context) ([]Value, error) {
 	var values []Value
 
 	for k, v := range m.gauge {
@@ -82,8 +81,8 @@ func (m *MemStorage) GetAll() []Value {
 			Value: v,
 		})
 	}
-
-	return values
+	fmt.Println(values)
+	return values, nil
 }
 
 func (m *MemStorage) SaveToFile() error {
@@ -114,7 +113,7 @@ func (m *MemStorage) RestoreFromFile() error {
 		return err
 	}
 
-	metricSlice := make([]Metric, 0)
+	metricSlice := make([]metrics.Metric, 0)
 
 	err = json.Unmarshal(file, &metricSlice)
 	if err != nil {
@@ -134,26 +133,34 @@ func (m *MemStorage) RestoreFromFile() error {
 }
 
 func toJSON(m *MemStorage) ([]byte, error) {
-	metrics := make([]Metric, 0, len(m.gauge)+len(m.counter))
+	metric := make([]metrics.Metric, 0, len(m.gauge)+len(m.counter))
 
 	for k, v := range m.gauge {
-		var m Metric
+		var m metrics.Metric
 		m.ID = k
 		m.MType = "gauge"
 		newValue := v
 		m.Value = &newValue
 
-		metrics = append(metrics, m)
+		metric = append(metric, m)
 	}
 
 	for k, v := range m.counter {
-		var m Metric
+		var m metrics.Metric
 		m.ID = k
 		m.MType = "counter"
 		newDelta := v
 		m.Delta = &newDelta
-		metrics = append(metrics, m)
+		metric = append(metric, m)
 	}
 
-	return json.Marshal(metrics)
+	return json.Marshal(metric)
+}
+
+func (m *MemStorage) Ping(ctx context.Context) error {
+	return nil
+}
+
+func (m *MemStorage) SetBatch(ctx context.Context, metrics []metrics.Metric) error {
+	return nil
 }
