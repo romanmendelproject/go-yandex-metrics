@@ -12,6 +12,7 @@ var (
 	StoreInterval   int
 	FileStoragePath string
 	Restore         bool
+	DBDSN           string
 )
 
 func ParseFlags() {
@@ -20,6 +21,7 @@ func ParseFlags() {
 	flag.IntVar(&StoreInterval, "i", 5, "store interval")
 	flag.StringVar(&FileStoragePath, "f", "/tmp/metrics-db.json", "storage file path")
 	flag.BoolVar(&Restore, "r", true, "restore data from file")
+	flag.StringVar(&DBDSN, "d", "", "db connection")
 
 	flag.Parse()
 	activateEnvFlags()
@@ -38,5 +40,8 @@ func activateEnvFlags() {
 	}
 	if envRestore := os.Getenv("RESTORE"); envRestore != "" {
 		Restore = true
+	}
+	if envDSN := os.Getenv("DATABASE_DSN"); envDSN != "" {
+		FlagRunAddr = envDSN
 	}
 }

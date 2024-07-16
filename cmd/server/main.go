@@ -2,55 +2,79 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
+
+	goose "github.com/pressly/goose/v3"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/db_storage"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 
+	_ "github.com/romanmendelproject/go-yandex-metrics/internal/server/migrations"
+
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	config.ParseFlags()
 	logger.SetLogLevel(config.LogLevel)
-	storage := storage.NewMemStorage(config.FileStoragePath)
+	var handler *handlers.ServiceHandlers
 
-	ps := "postgres://username:userpassword@localhost:5432/dbname"
-	conn, err := pgx.Connect(context.Background(), ps)
-	if err != nil {
-		log.Error(err)
-	}
-	defer conn.Close(context.Background())
+	if config.DBDSN != "" {
+		// ps := "postgres://username:userpassword@localhost:5432/dbname"
 
-	handler := handlers.NewHandlers(storage, conn)
-	r := router.NewRouter(handler)
+		database := db_storage.NewDBStorage(ctx, config.DBDSN)
+		defer database.Close()
 
-	if config.Restore {
-		err := storage.RestoreFromFile()
+		db, err := sql.Open("postgres", config.DBDSN)
 		if err != nil {
-			log.Error(err)
+			log.Error("Failed to open DB", "error", err)
+		}
+		defer db.Close()
+
+		if err := goose.Up(db, "./internal/server/migrations"); err != nil {
+			log.Error("Failed to run migrations", "error", err)
+		}
+		handler = handlers.NewHandlers(database)
+		runServer(handler)
+	} else {
+		memStorage := storage.NewMemStorage(config.FileStoragePath)
+		handler = handlers.NewHandlers(memStorage)
+		if config.Restore {
+			err := memStorage.RestoreFromFile()
+			if err != nil {
+				log.Error(err)
+			}
+		}
+		runServer(handler)
+
+		for {
+			time.Sleep(time.Second * time.Duration(config.StoreInterval))
+			go func() {
+				err := memStorage.SaveToFile()
+				if err != nil {
+					log.Error(err)
+				}
+			}()
 		}
 	}
+}
 
+func runServer(handler *handlers.ServiceHandlers) {
+	r := router.NewRouter(handler)
 	go func() {
 		err := http.ListenAndServe(config.FlagRunAddr, r)
 		if err != nil {
 			panic(err)
 		}
 	}()
-	for {
-		time.Sleep(time.Second * time.Duration(config.StoreInterval))
-		go func() {
-			err := storage.SaveToFile()
-			if err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-
 }
