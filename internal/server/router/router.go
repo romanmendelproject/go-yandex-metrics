@@ -2,15 +2,21 @@ package router
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/server/compress"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/compress"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/hash"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
 )
 
 func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(logger.RequestLogger)
 	r.Use(compress.GzipMiddleware)
+
+	if config.Key != "" {
+		r.Use(hash.HashMiddleware(config.Key))
+	}
 
 	r.Get("/", handler.AllData)
 	r.Post("/", handlers.HandleBadRequest)

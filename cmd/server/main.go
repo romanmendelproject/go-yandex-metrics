@@ -11,7 +11,7 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 
