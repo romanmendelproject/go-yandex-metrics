@@ -11,6 +11,7 @@ var ReportSingleInterval int
 var ReportBatchInterval int
 var PollInterval int
 var Key string
+var RateLimit int
 
 func ParseFlags() {
 	flag.StringVar(&FlagReqAddr, "a", "localhost:8080", "address and port to run agent")
@@ -18,6 +19,7 @@ func ParseFlags() {
 	flag.IntVar(&ReportBatchInterval, "b", 30, "send metrics to server")
 	flag.IntVar(&PollInterval, "p", 2, "collect metrics from runtime")
 	flag.StringVar(&Key, "k", "", "hash key")
+	flag.IntVar(&RateLimit, "l", 1, "sender worker count")
 	flag.Parse()
 	activateEnvFlags()
 }
@@ -42,5 +44,12 @@ func activateEnvFlags() {
 	}
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		Key = envKey
+	}
+	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
+		envRateLimit, err := strconv.Atoi(envRateLimit)
+		if err != nil {
+			panic(err)
+		}
+		RateLimit = envRateLimit
 	}
 }

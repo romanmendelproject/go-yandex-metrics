@@ -3,8 +3,11 @@ package metrics
 import (
 	"math/rand"
 	"runtime"
+	"time"
 
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Metric struct {
@@ -19,7 +22,7 @@ type Metrics struct {
 	PollCount int64
 }
 
-func (m *Metrics) Update() error {
+func (m *Metrics) Update(metricsChannel chan *[]Metric) error {
 	var runtimeMetrics runtime.MemStats
 	runtime.ReadMemStats(&runtimeMetrics)
 	m.PollCount += 1
@@ -55,6 +58,31 @@ func (m *Metrics) Update() error {
 		{ID: "RandomValue", MType: "gauge", Value: utils.GetFloatPtr(rand.Float64())},
 		{ID: "PollCount", MType: "counter", Delta: &m.PollCount},
 	}
+	metricsChannel <- &m.Data
 
+	return nil
+}
+
+func (m *Metrics) UpdateGopsUtil(metricsChannel chan *[]Metric) error {
+	memory, err := mem.VirtualMemory()
+	if err != nil {
+		return err
+	}
+
+	cpuUtilMetrics, err := cpu.Percent(time.Millisecond*100, true)
+	if err != nil {
+		return err
+	}
+
+	var cpuUtilMetric float64
+	for _, cpuUtilItem := range cpuUtilMetrics {
+		cpuUtilMetric += cpuUtilItem
+	}
+	m.Data = []Metric{
+		{ID: "TotalMemory", MType: "gauge", Value: utils.GetFloatPtr(float64(memory.Total))},
+		{ID: "FreeMemory", MType: "gauge", Value: utils.GetFloatPtr(float64(memory.Free))},
+		{ID: "CPUutilization1", MType: "gauge", Value: utils.GetFloatPtr(cpuUtilMetric)},
+	}
+	metricsChannel <- &m.Data
 	return nil
 }
