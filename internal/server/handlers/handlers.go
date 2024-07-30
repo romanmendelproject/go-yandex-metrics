@@ -26,6 +26,11 @@ type Storage interface {
 	Ping(ctx context.Context) error
 }
 
+func handleError(res http.ResponseWriter, err error, status int) {
+	log.Error(err)
+	http.Error(res, err.Error(), status)
+}
+
 type ServiceHandlers struct {
 	storage Storage
 }
@@ -48,20 +53,19 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if req.Method != http.MethodPost {
-		log.Error("incorrect http method")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect http method", http.StatusBadRequest)
 		return
+
 	}
+
 	urlParams, err := utils.ParseURLUpdate(req.URL.Path)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusNotFound)
+		handleError(res, err, http.StatusNotFound)
 		return
 	}
 	valueFloat, err := strconv.ParseFloat(strings.TrimSpace(urlParams.MetricValue), 64)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 
@@ -71,22 +75,19 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 
 func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
-		log.Error("incorrect http method")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect http method", http.StatusBadRequest)
 		return
 	}
 
 	urlParams, err := utils.ParseURLUpdate(req.URL.Path)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusNotFound)
+		handleError(res, err, http.StatusNotFound)
 		return
 	}
 
 	valueInt, err := strconv.ParseInt(urlParams.MetricValue, 10, 64)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 
@@ -98,14 +99,12 @@ func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Reque
 func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request) {
 	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusNotFound)
+		handleError(res, err, http.StatusNotFound)
 		return
 	}
 	value, err := h.storage.GetGauge(req.Context(), urlParams.MetricName)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusNotFound)
+		handleError(res, err, http.StatusNotFound)
 		return
 	}
 	io.WriteString(res, fmt.Sprintf("%v", strconv.FormatFloat(value, 'f', -1, 64)))
@@ -114,14 +113,12 @@ func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request)
 func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Request) {
 	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusNotFound)
+		handleError(res, err, http.StatusNotFound)
 		return
 	}
 	value, err := h.storage.GetCounter(req.Context(), urlParams.MetricName)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusNotFound)
+		handleError(res, err, http.StatusNotFound)
 		return
 	}
 	io.WriteString(res, fmt.Sprintf("%d", value))
@@ -131,38 +128,34 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 	var metric, metricResponse metrics.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
-		log.Error("incorrect http method")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect http method", http.StatusBadRequest)
 		return
 	}
 	if req.Header.Get("Content-Type") != "application/json" {
-		log.Error("incorrect Content-Type")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect Content-Type", http.StatusBadRequest)
 		return
 	}
 
 	_, err := buf.ReadFrom(req.Body)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &metric); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 
 	if metric.ID == "" {
-		log.Error("incorrect id data")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect id data", http.StatusBadRequest)
 		return
 	}
 	switch metric.MType {
 	case "gauge":
 		value, err := h.storage.GetGauge(req.Context(), metric.ID)
 		if err != nil {
-			log.Error(err)
-			res.WriteHeader(http.StatusNotFound)
+			handleError(res, err, http.StatusNotFound)
 			return
 		}
 
@@ -192,7 +185,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 
 	resp, err := json.Marshal(metricResponse)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		handleError(res, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -204,7 +197,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	values, err := h.storage.GetAll(req.Context())
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		handleError(res, err, http.StatusInternalServerError)
 		return
 	}
 	res.Header().Set("Content-Type", "text/html")
@@ -217,7 +210,7 @@ func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 func (h *ServiceHandlers) Ping(res http.ResponseWriter, req *http.Request) {
 	err := h.storage.Ping(req.Context())
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		handleError(res, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -228,34 +221,28 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 	var metric metrics.Metric
 	var buf bytes.Buffer
 	if req.Method != http.MethodPost {
-		log.Error("incorrect http method")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect http method", http.StatusBadRequest)
 		return
 	}
 
 	if req.Header.Get("Content-Type") != "application/json" {
-		log.Error("incorrect Content-Type")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect Content-Type", http.StatusBadRequest)
 		return
 	}
 
 	_, err := buf.ReadFrom(req.Body)
 	if err != nil {
-		log.Error(err)
-		res.WriteHeader(http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &metric); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		log.Error(err)
-		res.WriteHeader(http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 
 	if metric.ID == "" {
-		log.Error("incorrect id data")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect id data", http.StatusBadRequest)
 		return
 	}
 
@@ -275,14 +262,13 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 		}
 		metric.Delta = &counter
 	default:
-		log.Error("incorrect type data")
-		res.WriteHeader(http.StatusBadRequest)
+		http.Error(res, "incorrect type data", http.StatusBadRequest)
 		return
 	}
 
 	resp, err := json.Marshal(metric)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		handleError(res, err, http.StatusInternalServerError)
 		return
 	}
 	res.Header().Set("Content-Type", "application/json")
@@ -294,18 +280,16 @@ func (h *ServiceHandlers) UpdateBatch(res http.ResponseWriter, req *http.Request
 	ctx := req.Context()
 	var request []metrics.Metric
 	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
-		log.Error(err)
 		res.Write([]byte(err.Error()))
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 	defer req.Body.Close()
 
 	err := h.storage.SetBatch(ctx, request)
 	if err != nil {
-		log.Println(err)
 		res.Write([]byte(err.Error()))
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		handleError(res, err, http.StatusBadRequest)
 		return
 	}
 

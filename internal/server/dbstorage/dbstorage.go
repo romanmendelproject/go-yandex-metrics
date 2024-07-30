@@ -15,37 +15,37 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type DBStorage struct {
+type PostgresStorage struct {
 	db *pgxpool.Pool
 }
 
 var (
-	pgInstance *DBStorage
+	pgInstance *PostgresStorage
 	pgOnce     sync.Once
 )
 
-func NewDBStorage(ctx context.Context, connString string) *DBStorage {
+func NewPostgresStorage(ctx context.Context, connString string) *PostgresStorage {
 	pgOnce.Do(func() {
 		db, err := pgxpool.New(ctx, connString)
 		if err != nil {
-			panic(fmt.Errorf("unable to create connection pool: %w", err))
+			log.Fatal("unable to create connection pool: %w", err)
 		}
 
-		pgInstance = &DBStorage{db}
+		pgInstance = &PostgresStorage{db}
 	})
 
 	return pgInstance
 }
 
-func (pg *DBStorage) Ping(ctx context.Context) error {
+func (pg *PostgresStorage) Ping(ctx context.Context) error {
 	return pg.db.Ping(ctx)
 }
 
-func (pg *DBStorage) Close() {
+func (pg *PostgresStorage) Close() {
 	pg.db.Close()
 }
 
-func (pg *DBStorage) SetGauge(ctx context.Context, name string, value float64) error {
+func (pg *PostgresStorage) SetGauge(ctx context.Context, name string, value float64) error {
 	var oldVal float64
 
 	tx, err := pg.db.BeginTx(ctx, pgx.TxOptions{})
@@ -81,7 +81,7 @@ func (pg *DBStorage) SetGauge(ctx context.Context, name string, value float64) e
 	return nil
 }
 
-func (pg *DBStorage) SetCounter(ctx context.Context, name string, value int64) error {
+func (pg *PostgresStorage) SetCounter(ctx context.Context, name string, value int64) error {
 	var oldVal int64
 
 	tx, err := pg.db.BeginTx(ctx, pgx.TxOptions{})
@@ -117,7 +117,7 @@ func (pg *DBStorage) SetCounter(ctx context.Context, name string, value int64) e
 
 }
 
-func (pg *DBStorage) GetCounter(ctx context.Context, name string) (int64, error) {
+func (pg *PostgresStorage) GetCounter(ctx context.Context, name string) (int64, error) {
 	var counter sql.NullInt64
 
 	if err := pg.db.QueryRow(ctx, "SELECT counter FROM metrics WHERE name = $1 AND type = 'counter'", name).Scan(&counter); err != nil {
@@ -131,7 +131,7 @@ func (pg *DBStorage) GetCounter(ctx context.Context, name string) (int64, error)
 	return counter.Int64, nil
 }
 
-func (pg *DBStorage) GetGauge(ctx context.Context, name string) (float64, error) {
+func (pg *PostgresStorage) GetGauge(ctx context.Context, name string) (float64, error) {
 	var gauge sql.NullFloat64
 
 	if err := pg.db.QueryRow(ctx, "SELECT gauge FROM metrics WHERE name = $1 AND type = 'gauge'", name).Scan(&gauge); err != nil {
@@ -149,7 +149,7 @@ func (pg *DBStorage) GetGauge(ctx context.Context, name string) (float64, error)
 	return gauge.Float64, nil
 }
 
-func (pg *DBStorage) GetAll(ctx context.Context) ([]storage.Value, error) {
+func (pg *PostgresStorage) GetAll(ctx context.Context) ([]storage.Value, error) {
 	var values []storage.Value
 
 	rows, err := pg.db.Query(ctx, `SELECT type, name, gauge, counter FROM metrics`)
@@ -191,7 +191,7 @@ func (pg *DBStorage) GetAll(ctx context.Context) ([]storage.Value, error) {
 	return values, nil
 }
 
-func (pg *DBStorage) SetBatch(ctx context.Context, metrics []metrics.Metric) error {
+func (pg *PostgresStorage) SetBatch(ctx context.Context, metrics []metrics.Metric) error {
 	tx, err := pg.db.BeginTx(ctx, pgx.TxOptions{})
 	defer func() {
 		if err != nil {

@@ -32,7 +32,7 @@ func main() {
 	if config.DBDSN != "" {
 		// ps := "postgres://username:userpassword@localhost:5432/dbname"
 
-		database := dbstorage.NewDBStorage(ctx, config.DBDSN)
+		database := dbstorage.NewPostgresStorage(ctx, config.DBDSN)
 		defer database.Close()
 
 		db, err := sql.Open("postgres", config.DBDSN)
@@ -72,7 +72,7 @@ func main() {
 
 		err := http.ListenAndServe(config.FlagRunAddr, r)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}()
 }
