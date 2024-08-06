@@ -2,36 +2,26 @@ package app
 
 import (
 	"context"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/report"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/signal"
 )
 
-func RunSenderSingleWorkers(ctx context.Context, wg *sync.WaitGroup, metricsChannel chan *[]metrics.Metric) {
+func RunWorkers(ctx context.Context, wg *sync.WaitGroup, metricsChannel chan *[]metrics.Metric, workerFunc func(ctx context.Context, wg *sync.WaitGroup, metricsChannel <-chan *[]metrics.Metric)) {
 	for w := 1; w <= config.RateLimit; w++ {
 		wg.Add(1)
-		go report.ReportSingleMetric(ctx, wg, metricsChannel)
+		go workerFunc(ctx, wg, metricsChannel)
 	}
 }
 
-func RunSenderBatchWorkers(ctx context.Context, wg *sync.WaitGroup, metricsChannel chan *[]metrics.Metric) {
-	for w := 1; w <= config.RateLimit; w++ {
-		wg.Add(1)
-		go report.ReportBatchMetric(ctx, wg, metricsChannel)
-	}
-}
-
-func Start() {
+func StartAgent() {
 	config.ParseFlags()
 
-	termChan := make(chan os.Signal, 1)
-	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+	termChan := signal.Signal()
 
 	metricsChannel := make(chan *[]metrics.Metric, 100)
 	var metr metrics.Metrics
@@ -44,8 +34,8 @@ func Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	RunSenderSingleWorkers(ctx, wg, metricsChannel)
-	RunSenderBatchWorkers(ctx, wg, metricsChannel)
+	// RunWorkers(ctx, wg, metricsChannel, report.ReportSingleMetric)
+	RunWorkers(ctx, wg, metricsChannel, report.ReportBatchMetric)
 
 	wg.Add(1)
 	go func(ctx context.Context) {

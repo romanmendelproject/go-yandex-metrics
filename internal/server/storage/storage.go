@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
 )
 
 type MemStorage struct {
-	counter  map[string]int64
-	gauge    map[string]float64
+	counter  sync.Map
+	gauge    sync.Map
 	filePath string
 }
 
@@ -25,62 +26,65 @@ type Value struct {
 
 func NewMemStorage(filePath string) *MemStorage {
 	return &MemStorage{
-		gauge:    make(map[string]float64),
-		counter:  make(map[string]int64),
 		filePath: filePath,
 	}
 }
 
 func (m *MemStorage) SetGauge(ctx context.Context, name string, value float64) error {
-	m.gauge[name] = value
+	m.gauge.Store(name, value)
 	return nil
 }
 
 func (m *MemStorage) SetCounter(ctx context.Context, name string, value int64) error {
 	if _, err := m.GetCounter(ctx, name); err != nil {
-		m.counter[name] = value
+		m.counter.Store(name, value)
 	} else {
-		m.counter[name] += value
+		valueOld, ok := m.counter.Load(name)
+		if ok {
+			m.counter.Store(name, value+valueOld.(int64))
+		}
 	}
 	return nil
 }
 
 func (m *MemStorage) GetCounter(ctx context.Context, name string) (int64, error) {
-	value, ok := m.counter[name]
+	value, ok := m.counter.Load(name)
 	if !ok {
 		return 0, errors.New("invalid name of metrics")
 	}
 
-	return value, nil
+	return value.(int64), nil
 }
 
 func (m *MemStorage) GetGauge(ctx context.Context, name string) (float64, error) {
-	value, ok := m.gauge[name]
+	value, ok := m.gauge.Load(name)
 	if !ok {
 		return 0, errors.New("invalid name of metrics")
 	}
 
-	return value, nil
+	return value.(float64), nil
 }
 
 func (m *MemStorage) GetAll(ctx context.Context) ([]Value, error) {
 	var values []Value
 
-	for k, v := range m.gauge {
+	m.gauge.Range(func(k, v interface{}) bool {
 		values = append(values, Value{
-			Name:  k,
+			Name:  k.(string),
 			Type:  "gauge",
-			Value: strconv.FormatFloat(v, 'f', 1, 64),
+			Value: strconv.FormatFloat(v.(float64), 'f', 1, 64),
 		})
-	}
+		return true
+	})
 
-	for k, v := range m.counter {
+	m.counter.Range(func(k, v interface{}) bool {
 		values = append(values, Value{
-			Name:  k,
+			Name:  k.(string),
 			Type:  "counter",
-			Value: v,
+			Value: v.(int64),
 		})
-	}
+		return true
+	})
 	fmt.Println(values)
 	return values, nil
 }
@@ -123,9 +127,9 @@ func (m *MemStorage) RestoreFromFile() error {
 	for _, metric := range metricSlice {
 		switch metric.MType {
 		case "gauge":
-			m.gauge[metric.ID] = *metric.Value
+			m.gauge.Store(metric.ID, *metric.Value)
 		case "counter":
-			m.counter[metric.ID] = *metric.Delta
+			m.counter.Store(metric.ID, *metric.Value)
 		}
 	}
 
@@ -133,26 +137,27 @@ func (m *MemStorage) RestoreFromFile() error {
 }
 
 func toJSON(m *MemStorage) ([]byte, error) {
-	metric := make([]metrics.Metric, 0, len(m.gauge)+len(m.counter))
+	metric := make([]metrics.Metric, 0)
 
-	for k, v := range m.gauge {
+	m.gauge.Range(func(k, v interface{}) bool {
 		var m metrics.Metric
-		m.ID = k
+		m.ID = k.(string)
 		m.MType = "gauge"
-		newValue := v
+		newValue := v.(float64)
 		m.Value = &newValue
-
 		metric = append(metric, m)
-	}
+		return true
+	})
 
-	for k, v := range m.counter {
+	m.counter.Range(func(k, v interface{}) bool {
 		var m metrics.Metric
-		m.ID = k
+		m.ID = k.(string)
 		m.MType = "counter"
-		newDelta := v
+		newDelta := v.(int64)
 		m.Delta = &newDelta
 		metric = append(metric, m)
-	}
+		return true
+	})
 
 	return json.Marshal(metric)
 }

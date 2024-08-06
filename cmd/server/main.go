@@ -30,21 +30,8 @@ func main() {
 	var handler *handlers.ServiceHandlers
 
 	if config.DBDSN != "" {
-		// ps := "postgres://username:userpassword@localhost:5432/dbname"
-
-		database := dbstorage.NewPostgresStorage(ctx, config.DBDSN)
+		database := dbInit(ctx)
 		defer database.Close()
-
-		db, err := sql.Open("postgres", config.DBDSN)
-		if err != nil {
-			log.Error("Failed to open DB", "error", err)
-		}
-		defer db.Close()
-
-		if err := goose.Up(db, "./internal/server/dbstorage/migrations"); err != nil {
-			log.Error("Failed to run migrations", "error", err)
-		}
-
 		handler = handlers.NewHandlers(database)
 
 	} else {
@@ -75,4 +62,21 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
+}
+
+func dbInit(ctx context.Context) *dbstorage.PostgresStorage {
+	// ps := "postgres://username:userpassword@localhost:5432/dbname"
+
+	database := dbstorage.NewPostgresStorage(ctx, config.DBDSN)
+
+	db, err := sql.Open("postgres", config.DBDSN)
+	if err != nil {
+		log.Error("Failed to open DB", "error", err)
+	}
+	defer db.Close()
+
+	if err := goose.Up(db, "./internal/server/dbstorage/migrations"); err != nil {
+		log.Error("Failed to run migrations", "error", err)
+	}
+	return database
 }

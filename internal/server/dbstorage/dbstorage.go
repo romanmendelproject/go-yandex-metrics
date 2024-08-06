@@ -201,6 +201,8 @@ func (pg *PostgresStorage) SetBatch(ctx context.Context, metrics []metrics.Metri
 		}
 	}()
 
+	batch := &pgx.Batch{}
+
 	query := `INSERT INTO metrics (type, name, counter, gauge) VALUES ($1, $2, $3, $4)`
 
 	for _, metric := range metrics {
@@ -221,25 +223,29 @@ func (pg *PostgresStorage) SetBatch(ctx context.Context, metrics []metrics.Metri
 
 			*metric.Delta += oldCounter
 
-			if _, err := tx.Exec(ctx, `UPDATE metrics SET counter = $1 WHERE type = 'counter' AND name = $2`, metric.Delta, metric.ID); err != nil {
-				log.Error(err)
-				return err
-			}
+			batch.Queue(`UPDATE metrics SET counter = $1 WHERE type = 'counter' AND name = $2`, metric.Delta, metric.ID)
+
 		} else if metric.MType == "gauge" {
-			ra, err := tx.Exec(ctx, `UPDATE metrics SET gauge = $1 WHERE type = 'gauge' AND name = $2`, metric.Value, metric.ID)
-			if err != nil {
+			var oldGauge float64
+			if err := tx.QueryRow(ctx, `SELECT 1 FROM metrics WHERE name=$1 AND type = 'gauge'`, metric.ID).Scan(&oldGauge); err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					if _, err := tx.Exec(ctx, query, metric.MType, metric.ID, metric.Delta, metric.Value); err != nil {
+						log.Error(err)
+						return err
+					}
+					continue
+				}
+
 				log.Error(err)
 				return err
 			}
 
-			if ra.RowsAffected() == 0 {
-				if _, err := tx.Exec(ctx, query, metric.MType, metric.ID, metric.Delta, metric.Value); err != nil {
-					log.Error(err)
-					return err
-				}
-			}
+			batch.Queue(`UPDATE metrics SET gauge = $1 WHERE type = 'gauge' AND name = $2`, metric.Value, metric.ID)
 		}
 	}
+
+	br := tx.SendBatch(ctx, batch)
+	br.Close()
 
 	return nil
 }

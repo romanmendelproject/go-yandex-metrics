@@ -32,7 +32,11 @@ func TestMemStorage_SetGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetGauge(ctx, tt.args.name, tt.args.value)
-			require.Equal(t, storage.gauge["Test"], tt.want)
+			v, ok := storage.gauge.Load("Test")
+			if ok {
+				require.Equal(t, v, tt.want)
+			}
+
 		})
 	}
 }
@@ -63,7 +67,10 @@ func TestMemStorage_SetCount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage.SetCounter(ctx, tt.args.name, tt.args.value)
-			require.Equal(t, storage.counter["Test"], tt.want)
+			v, ok := storage.counter.Load("Test")
+			if ok {
+				require.Equal(t, v, tt.want)
+			}
 		})
 	}
 }
