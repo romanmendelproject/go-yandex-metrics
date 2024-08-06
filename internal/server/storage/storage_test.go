@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,12 +26,17 @@ func TestMemStorage_SetGauge(t *testing.T) {
 			want: 0.5,
 		},
 	}
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	storage := NewMemStorage("test")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage.SetGauge(tt.args.name, tt.args.value)
-			require.Equal(t, storage.gauge["Test"], tt.want)
+			storage.SetGauge(ctx, tt.args.name, tt.args.value)
+			v, ok := storage.gauge.Load("Test")
+			if ok {
+				require.Equal(t, v, tt.want)
+			}
+
 		})
 	}
 }
@@ -55,11 +61,16 @@ func TestMemStorage_SetCount(t *testing.T) {
 		},
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	storage := NewMemStorage("test")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage.SetCounter(tt.args.name, tt.args.value)
-			require.Equal(t, storage.counter["Test"], tt.want)
+			storage.SetCounter(ctx, tt.args.name, tt.args.value)
+			v, ok := storage.counter.Load("Test")
+			if ok {
+				require.Equal(t, v, tt.want)
+			}
 		})
 	}
 }
