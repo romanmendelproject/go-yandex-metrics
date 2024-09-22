@@ -1,3 +1,4 @@
+// Модуль управления сигналами завершения программы
 package signal
 
 import (
@@ -6,6 +7,7 @@ import (
 	"syscall"
 )
 
+// Signal управляет сигналом для завершением программы
 func Signal() chan os.Signal {
 	termChan := make(chan os.Signal, 1)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)

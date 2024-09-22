@@ -1,3 +1,4 @@
+// Модуль для инициализации и запуска агента
 package app
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/signal"
 )
 
+// RunWorkers запускает горутины для обработки и отпраки метрик
 func RunWorkers(ctx context.Context, wg *sync.WaitGroup, metricsChannel chan *[]metrics.Metric, workerFunc func(ctx context.Context, wg *sync.WaitGroup, metricsChannel <-chan *[]metrics.Metric)) {
 	for w := 1; w <= config.RateLimit; w++ {
 		wg.Add(1)
@@ -18,6 +20,7 @@ func RunWorkers(ctx context.Context, wg *sync.WaitGroup, metricsChannel chan *[]
 	}
 }
 
+// StartAgent запускает программу-агента
 func StartAgent() {
 	config.ParseFlags()
 
@@ -26,15 +29,12 @@ func StartAgent() {
 	metricsChannel := make(chan *[]metrics.Metric, 100)
 	var metr metrics.Metrics
 
-	// tickerSingle := time.NewTicker(time.Duration(config.ReportSingleInterval) * time.Second)
-	// tickerBatch := time.NewTicker(time.Duration(config.ReportBatchInterval) * time.Second)
 	tickerPool := time.NewTicker(time.Duration(config.PollInterval) * time.Second)
 
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// RunWorkers(ctx, wg, metricsChannel, report.ReportSingleMetric)
 	RunWorkers(ctx, wg, metricsChannel, report.ReportBatchMetric)
 
 	wg.Add(1)

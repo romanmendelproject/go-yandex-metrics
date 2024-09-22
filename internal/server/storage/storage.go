@@ -1,3 +1,4 @@
+// Модуль для работы с БД
 package storage
 
 import (
@@ -12,29 +13,34 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
 )
 
+// MemStorage хранит информацию о метриках
 type MemStorage struct {
 	counter  sync.Map
 	gauge    sync.Map
 	filePath string
 }
 
+// Value определяет значение метрики
 type Value struct {
 	Name  string
 	Type  string
 	Value interface{}
 }
 
+// NewMemStorage создает экземпляр объекта MemStorage
 func NewMemStorage(filePath string) *MemStorage {
 	return &MemStorage{
 		filePath: filePath,
 	}
 }
 
+// SetGauge записывает в БД метрики типа Gauge
 func (m *MemStorage) SetGauge(ctx context.Context, name string, value float64) error {
 	m.gauge.Store(name, value)
 	return nil
 }
 
+// SetCounter записывает в БД метрики типа Counter
 func (m *MemStorage) SetCounter(ctx context.Context, name string, value int64) error {
 	if _, err := m.GetCounter(ctx, name); err != nil {
 		m.counter.Store(name, value)
@@ -47,6 +53,7 @@ func (m *MemStorage) SetCounter(ctx context.Context, name string, value int64) e
 	return nil
 }
 
+// GetCounter получает из БД метрики типа Counter
 func (m *MemStorage) GetCounter(ctx context.Context, name string) (int64, error) {
 	value, ok := m.counter.Load(name)
 	if !ok {
@@ -56,6 +63,7 @@ func (m *MemStorage) GetCounter(ctx context.Context, name string) (int64, error)
 	return value.(int64), nil
 }
 
+// GetGauge получает из БД метрики типа Gauge
 func (m *MemStorage) GetGauge(ctx context.Context, name string) (float64, error) {
 	value, ok := m.gauge.Load(name)
 	if !ok {
@@ -65,6 +73,7 @@ func (m *MemStorage) GetGauge(ctx context.Context, name string) (float64, error)
 	return value.(float64), nil
 }
 
+// GetAll получает полный набор метрик из БД
 func (m *MemStorage) GetAll(ctx context.Context) ([]Value, error) {
 	var values []Value
 
@@ -89,7 +98,9 @@ func (m *MemStorage) GetAll(ctx context.Context) ([]Value, error) {
 	return values, nil
 }
 
+// SaveToFile сохраняет данные с метриками в файл
 func (m *MemStorage) SaveToFile() error {
+
 	file, err := os.Create(m.filePath)
 
 	if err != nil {
@@ -110,6 +121,7 @@ func (m *MemStorage) SaveToFile() error {
 	return nil
 }
 
+// RestoreFromFile восстанавливает данные с метриками из файла
 func (m *MemStorage) RestoreFromFile() error {
 	file, err := os.ReadFile(m.filePath)
 
@@ -162,10 +174,12 @@ func toJSON(m *MemStorage) ([]byte, error) {
 	return json.Marshal(metric)
 }
 
+// Ping проверяет доступность БД
 func (m *MemStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
+// SetBatch обновляет все метрки в БД за один запрос
 func (m *MemStorage) SetBatch(ctx context.Context, metrics []metrics.Metric) error {
 	return nil
 }

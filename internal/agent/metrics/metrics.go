@@ -1,3 +1,4 @@
+// Модуль для сбора метрик с сервера
 package metrics
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// Metric описывает обрабатываемые метрики
 type Metric struct {
 	ID    string   `json:"id"`              // имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -22,6 +24,7 @@ type Metrics struct {
 	PollCount int64
 }
 
+// Update получение базовых метрик
 func (m *Metrics) Update(metricsChannel chan *[]Metric) error {
 	var runtimeMetrics runtime.MemStats
 	runtime.ReadMemStats(&runtimeMetrics)
@@ -63,6 +66,7 @@ func (m *Metrics) Update(metricsChannel chan *[]Metric) error {
 	return nil
 }
 
+// UpdateGopsUtil получение расширенных метрик
 func (m *Metrics) UpdateGopsUtil(metricsChannel chan *[]Metric) error {
 	memory, err := mem.VirtualMemory()
 	if err != nil {

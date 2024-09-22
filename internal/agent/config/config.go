@@ -1,3 +1,4 @@
+// Модуль для объявления конфигурации агента
 package config
 
 import (
@@ -13,6 +14,7 @@ var PollInterval int
 var Key string
 var RateLimit int
 
+// ParseFlags читает аргументы переданные при старте агента
 func ParseFlags() {
 	flag.StringVar(&FlagReqAddr, "a", "localhost:8080", "address and port to run agent")
 	flag.IntVar(&ReportSingleInterval, "r", 5, "send metrics to server")

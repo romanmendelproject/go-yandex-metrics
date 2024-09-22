@@ -1,3 +1,4 @@
+// Модуль отправки данных на сервер
 package report
 
 import (
@@ -19,6 +20,7 @@ import (
 
 var retries = []int{1, 3, 5}
 
+// ReportSingleMetric отправка одинарной метрики на сервер
 func ReportSingleMetric(ctx context.Context, wg *sync.WaitGroup, metricsChannel <-chan *[]metrics.Metric) {
 	defer wg.Done()
 	for {
@@ -42,6 +44,7 @@ func ReportSingleMetric(ctx context.Context, wg *sync.WaitGroup, metricsChannel 
 	}
 }
 
+// ReportBatchMetric отправка нескольких метрик в одном пакете в формате JSON
 func ReportBatchMetric(ctx context.Context, wg *sync.WaitGroup, metricsChannel <-chan *[]metrics.Metric) {
 	defer wg.Done()
 	for {

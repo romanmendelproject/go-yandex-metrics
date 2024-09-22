@@ -1,3 +1,4 @@
+// Модуль для получения хеша
 package crypto
 
 import (
@@ -6,6 +7,7 @@ import (
 	"encoding/base64"
 )
 
+// GetHash получение GetHash по ключу
 func GetHash(metrics []byte, key string) string {
 	h := hmac.New(sha256.New, []byte(key))
 	h.Write(metrics)
