@@ -1,10 +1,13 @@
 package router
 
 import (
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/server/compress"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/server/logger"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/compress"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/hash"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
 )
 
 func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
@@ -30,6 +33,16 @@ func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 		r.Post("/", handler.UpdateJSON)
 		r.Post("/*", handlers.HandleBadRequest)
 	})
+	r.Route("/updates", func(r chi.Router) {
+		r.Use(middleware.AllowContentType("application/json"))
+		if config.Key != "" {
+			r.Use(hash.HashMiddleware(config.Key))
+		}
+
+		r.Post("/", handler.UpdateBatch)
+	})
+
+	r.Get("/ping", handler.Ping)
 
 	return r
 }
