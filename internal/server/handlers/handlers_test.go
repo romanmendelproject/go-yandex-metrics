@@ -398,9 +398,10 @@ func TestPing(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	handler.Ping(w, request)
-
+	res := w.Result()
+	defer res.Body.Close()
 	expected := 200
-	if w.Result().StatusCode != expected {
+	if res.StatusCode != expected {
 		t.Errorf("Status code error: got %v want %v",
 			w.Body.String(), expected)
 	}
@@ -430,6 +431,7 @@ func TestUpdateJSON(t *testing.T) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			w.Body.String(), expected)
 	}
+
 }
 
 func TestServiceHandlers_UpdateBatch(t *testing.T) {
