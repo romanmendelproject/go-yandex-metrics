@@ -14,6 +14,7 @@ require (
 require (
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/chrisyxlee/pgxpoolmock v1.1.4 // indirect
+	github.com/driftprogramming/pgxpoolmock v1.1.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -37,7 +38,9 @@ require (
 	github.com/ydb-platform/ydb-go-genproto v0.0.0-20240126124512-dbb0e1720dbf // indirect
 	github.com/ydb-platform/ydb-go-sdk/v3 v3.55.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
