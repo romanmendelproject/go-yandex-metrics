@@ -471,3 +471,29 @@ func TestServiceHandlers_UpdateBatch(t *testing.T) {
 		})
 	}
 }
+
+func TestHandleBadRequest(t *testing.T) {
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	rr := httptest.NewRecorder()
+
+	HandleBadRequest(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("HandleBadRequest returned wrong status code: got %v want %v", status, http.StatusBadRequest)
+	}
+}
+
+func TestHandleStatusNotFound(t *testing.T) {
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	rr := httptest.NewRecorder()
+
+	HandleStatusNotFound(rr, req)
+
+	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf("HandleStatusNotFound returned wrong status code: got %v want %v", status, http.StatusNotFound)
+	}
+}

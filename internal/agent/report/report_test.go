@@ -1,10 +1,12 @@
 package report
 
 import (
+	"context"
 	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
@@ -59,4 +61,51 @@ func Test_sendMetrics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReportSingleMetric(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	metricsChannel := make(chan *[]metrics.Metric, 1)
+
+	wg.Add(1)
+	go ReportSingleMetric(ctx, &wg, metricsChannel)
+
+	metric := metrics.Metric{
+		ID:    "metric1",
+		MType: "gauge",
+		Value: float64Ptr(1.1),
+	}
+
+	metricsChannel <- &[]metrics.Metric{metric}
+
+}
+
+func TestReportBatchMetric(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	metricsChannel := make(chan *[]metrics.Metric, 1)
+
+	wg.Add(1)
+	go ReportBatchMetric(ctx, &wg, metricsChannel)
+
+	metrics := []metrics.Metric{
+		{ID: "metric1", MType: "gauge", Value: float64Ptr(1.1)},
+		{ID: "metric2", MType: "counter", Delta: int64Ptr(2)},
+	}
+
+	metricsChannel <- &metrics
+
+}
+
+func float64Ptr(f float64) *float64 {
+	return &f
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
 }
