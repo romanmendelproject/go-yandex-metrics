@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq" // Импортируйте драйвер базы данных, например PostgreSQL
 )
 
-func TestMigration(t *testing.T) {
+func TestMigrations(t *testing.T) {
 	// Создаем соединение с базой данных
 	db, err := sql.Open("postgres", "user=username password=userpassword dbname=dbname sslmode=disable")
 	if err != nil {
