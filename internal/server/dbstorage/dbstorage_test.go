@@ -13,6 +13,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewPostgresStorage(t *testing.T) {
+	// Test case 1: Successful connection
+	connString := "postgres://user:password@localhost:5432/database"
+	ctx := context.Background()
+	storage := NewPostgresStorage(ctx, connString)
+	if storage == nil {
+		t.Errorf("Expected non-nil PostgresStorage instance, got nil")
+	}
+	if storage.db == nil {
+		t.Errorf("Expected non-nil db instance, got nil")
+	}
+}
+
 func TestGetCounter(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

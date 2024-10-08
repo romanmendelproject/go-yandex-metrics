@@ -18,7 +18,7 @@ func handlerServer(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-func Test_sendMetrics(t *testing.T) {
+func TestSendMetrics(t *testing.T) {
 	config.ParseFlags()
 	type args struct {
 		name   string

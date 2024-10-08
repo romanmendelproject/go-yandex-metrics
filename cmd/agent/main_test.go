@@ -2,12 +2,9 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"os"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPrintVersion(t *testing.T) {
@@ -38,13 +35,4 @@ func testPrintVersion(t *testing.T, expectedOutput string) {
 	if out != expectedOutput {
 		t.Errorf("printVersion() = %q, want %q", out, expectedOutput)
 	}
-}
-
-func TestDbInit(t *testing.T) {
-	ctx := context.Background()
-
-	storage := dbInit(ctx)
-
-	assert.NotNil(t, storage)
-
 }
