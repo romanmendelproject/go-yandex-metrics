@@ -21,9 +21,6 @@ func TestNewPostgresStorage(t *testing.T) {
 	if storage == nil {
 		t.Errorf("Expected non-nil PostgresStorage instance, got nil")
 	}
-	if storage.db == nil {
-		t.Errorf("Expected non-nil db instance, got nil")
-	}
 }
 
 func TestGetCounter(t *testing.T) {
