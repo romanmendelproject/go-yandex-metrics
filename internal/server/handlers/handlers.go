@@ -1,3 +1,4 @@
+// Модуль управления обработкой запросов
 package handlers
 
 import (
@@ -16,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Storage описывает поведение хранилища метрик
 type Storage interface {
 	SetGauge(ctx context.Context, name string, value float64) error
 	SetCounter(ctx context.Context, name string, value int64) error
@@ -35,20 +37,24 @@ type ServiceHandlers struct {
 	storage Storage
 }
 
+// NewHandlers создает объект обработчика запросов
 func NewHandlers(storage Storage) *ServiceHandlers {
 	return &ServiceHandlers{
 		storage: storage,
 	}
 }
 
+// HandleBadRequest обрабатывает запросы типа BadRequest
 func HandleBadRequest(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusBadRequest)
 }
 
+// HandleStatusNotFound обрабатывает запросы типа StatusNotFound
 func HandleStatusNotFound(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusNotFound)
 }
 
+// UpdateGauge обрабатывает запросы на обновление метрик типа Gauge
 func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -73,6 +79,7 @@ func (h *ServiceHandlers) UpdateGauge(res http.ResponseWriter, req *http.Request
 	res.WriteHeader(http.StatusOK)
 }
 
+// UpdateCounter обрабатывает запросы на обновление метрик типа Counter
 func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		http.Error(res, "incorrect http method", http.StatusBadRequest)
@@ -96,6 +103,7 @@ func (h *ServiceHandlers) UpdateCounter(res http.ResponseWriter, req *http.Reque
 	res.WriteHeader(http.StatusOK)
 }
 
+// ValueGauge обрабатывает запросы на запись метрик типа Gauge
 func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request) {
 	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
@@ -110,6 +118,7 @@ func (h *ServiceHandlers) ValueGauge(res http.ResponseWriter, req *http.Request)
 	io.WriteString(res, fmt.Sprintf("%v", strconv.FormatFloat(value, 'f', -1, 64)))
 }
 
+// ValueCounter обрабатывает запросы на запись метрик типа Counter
 func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Request) {
 	urlParams, err := utils.ParseURLValue(req.URL.Path)
 	if err != nil {
@@ -124,6 +133,7 @@ func (h *ServiceHandlers) ValueCounter(res http.ResponseWriter, req *http.Reques
 	io.WriteString(res, fmt.Sprintf("%d", value))
 }
 
+// ValueJSON обрабатывает запросы на получение метрик в формате JSON
 func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) {
 	var metric, metricResponse metrics.Metric
 	var buf bytes.Buffer
@@ -194,6 +204,7 @@ func (h *ServiceHandlers) ValueJSON(res http.ResponseWriter, req *http.Request) 
 	res.Write(resp)
 }
 
+// AllData обрабатывает запросы на получение всех метрик
 func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	values, err := h.storage.GetAll(req.Context())
 	if err != nil {
@@ -207,6 +218,7 @@ func (h *ServiceHandlers) AllData(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Ping обрабатывает запросы на проверку доступности БД
 func (h *ServiceHandlers) Ping(res http.ResponseWriter, req *http.Request) {
 	err := h.storage.Ping(req.Context())
 	if err != nil {
@@ -217,6 +229,7 @@ func (h *ServiceHandlers) Ping(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+// ValueJSON обрабатывает запросы на запись метрик полученных в формате JSON
 func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request) {
 	var metric metrics.Metric
 	var buf bytes.Buffer
@@ -276,6 +289,7 @@ func (h *ServiceHandlers) UpdateJSON(res http.ResponseWriter, req *http.Request)
 	res.Write(resp)
 }
 
+// UpdateBatch обрабатывает запросы на запись метрик используя один запрос в БД
 func (h *ServiceHandlers) UpdateBatch(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	var request []metrics.Metric

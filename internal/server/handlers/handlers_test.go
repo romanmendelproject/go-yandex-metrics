@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage/mocks"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
@@ -252,5 +255,245 @@ func TestServiceHandlers_UpdateJSON(t *testing.T) {
 				require.Equal(t, tt.args.body, tt.wantValue)
 			}
 		})
+	}
+}
+
+func TestValueGauge(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	db.EXPECT().GetGauge(ctx, "test").Return(float64(0.5), nil)
+
+	handler := NewHandlers(db)
+
+	request := httptest.NewRequest(http.MethodGet, "/value/gauge/test", nil)
+
+	w := httptest.NewRecorder()
+	handler.ValueGauge(w, request)
+
+	expected := `0.5`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestValueCounter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	db.EXPECT().GetCounter(ctx, "test").Return(int64(50), nil)
+
+	handler := NewHandlers(db)
+
+	request := httptest.NewRequest(http.MethodGet, "/value/count/test", nil)
+
+	w := httptest.NewRecorder()
+	handler.ValueCounter(w, request)
+
+	expected := `50`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestValueJSONGauge(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	db.EXPECT().GetGauge(ctx, "test").Return(float64(0.5), nil)
+
+	handler := NewHandlers(db)
+
+	var jsonStr = []byte(`{"id":"test","type":"gauge"}`)
+	request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(jsonStr))
+	request.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	handler.ValueJSON(w, request)
+
+	expected := `{"id":"test","type":"gauge","value":0.5}`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestValueJSONCounter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	db.EXPECT().GetCounter(ctx, "test").Return(int64(1), nil)
+
+	handler := NewHandlers(db)
+
+	var jsonStr = []byte(`{"id":"test","type":"counter"}`)
+	request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(jsonStr))
+	request.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	handler.ValueJSON(w, request)
+
+	expected := `{"id":"test","type":"counter","delta":1}`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestAllData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	values := []storage.Value{{Name: "test", Type: "gauge", Value: float64(50)}}
+	db.EXPECT().GetAll(ctx).Return(values, nil)
+
+	handler := NewHandlers(db)
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	w := httptest.NewRecorder()
+	handler.AllData(w, request)
+
+	expected := `0 type = gauge  name = test value = 50`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestPing(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	db.EXPECT().Ping(ctx)
+
+	handler := NewHandlers(db)
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	w := httptest.NewRecorder()
+	handler.Ping(w, request)
+	res := w.Result()
+	defer res.Body.Close()
+	expected := 200
+	if res.StatusCode != expected {
+		t.Errorf("Status code error: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestUpdateJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
+
+	db.EXPECT().SetGauge(ctx, "test", float64(0.5)).Return(nil)
+
+	handler := NewHandlers(db)
+
+	var jsonStr = []byte(`{"id":"test","type":"gauge","value":0.5}`)
+	request := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewBuffer(jsonStr))
+	request.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	handler.UpdateJSON(w, request)
+
+	expected := `{"id":"test","type":"gauge","value":0.5}`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
+
+}
+
+func TestServiceHandlers_UpdateBatch(t *testing.T) {
+	type args struct {
+		httpMethod string
+		path       string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		wantStatusCode int
+	}{
+		{
+			name: "Good update gauge",
+			args: args{
+				httpMethod: http.MethodPost,
+				path:       "/updates/",
+			},
+			wantStatusCode: http.StatusOK,
+		},
+	}
+	storage := storage.NewMemStorage("test")
+
+	handler := NewHandlers(storage)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.args.httpMethod, tt.args.path, nil)
+
+			w := httptest.NewRecorder()
+			handler.UpdateBatch(w, request)
+
+			res := w.Result()
+			defer res.Body.Close()
+
+			require.Equal(t, res.StatusCode, tt.wantStatusCode)
+		})
+	}
+}
+
+func TestHandleBadRequest(t *testing.T) {
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	rr := httptest.NewRecorder()
+
+	HandleBadRequest(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("HandleBadRequest returned wrong status code: got %v want %v", status, http.StatusBadRequest)
+	}
+}
+
+func TestHandleStatusNotFound(t *testing.T) {
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	rr := httptest.NewRecorder()
+
+	HandleStatusNotFound(rr, req)
+
+	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf("HandleStatusNotFound returned wrong status code: got %v want %v", status, http.StatusNotFound)
 	}
 }

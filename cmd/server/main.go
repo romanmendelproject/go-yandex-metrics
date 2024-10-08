@@ -7,7 +7,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-
+	"github.com/pressly/goose/v3"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
@@ -15,7 +15,6 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
 
-	"github.com/pressly/goose/v3"
 	_ "github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage/migrations"
 
 	log "github.com/sirupsen/logrus"

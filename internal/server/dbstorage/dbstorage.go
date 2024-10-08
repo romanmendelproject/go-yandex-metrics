@@ -1,3 +1,4 @@
+// Модуль для взаимодействия с БД
 package dbstorage
 
 import (
@@ -15,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// PostgresStorage определяет объект для работы с БД
 type PostgresStorage struct {
 	db *pgxpool.Pool
 }
@@ -24,6 +26,7 @@ var (
 	pgOnce     sync.Once
 )
 
+// NewPostgresStorage создает объект для работы с БД
 func NewPostgresStorage(ctx context.Context, connString string) *PostgresStorage {
 	pgOnce.Do(func() {
 		db, err := pgxpool.New(ctx, connString)
@@ -37,14 +40,17 @@ func NewPostgresStorage(ctx context.Context, connString string) *PostgresStorage
 	return pgInstance
 }
 
+// Ping проверяет доступность БД
 func (pg *PostgresStorage) Ping(ctx context.Context) error {
 	return pg.db.Ping(ctx)
 }
 
+// Close закрывает соединение с БД
 func (pg *PostgresStorage) Close() {
 	pg.db.Close()
 }
 
+// SetGauge записывает данные формата Gauge в БД
 func (pg *PostgresStorage) SetGauge(ctx context.Context, name string, value float64) error {
 	var oldVal float64
 
@@ -81,6 +87,7 @@ func (pg *PostgresStorage) SetGauge(ctx context.Context, name string, value floa
 	return nil
 }
 
+// SetCounter записывает данные формата Counter в БД
 func (pg *PostgresStorage) SetCounter(ctx context.Context, name string, value int64) error {
 	var oldVal int64
 
@@ -117,6 +124,7 @@ func (pg *PostgresStorage) SetCounter(ctx context.Context, name string, value in
 
 }
 
+// GetCounter читает данные формата Counter из БД
 func (pg *PostgresStorage) GetCounter(ctx context.Context, name string) (int64, error) {
 	var counter sql.NullInt64
 
@@ -131,6 +139,7 @@ func (pg *PostgresStorage) GetCounter(ctx context.Context, name string) (int64, 
 	return counter.Int64, nil
 }
 
+// GetGauge читает данные формата Gauge из БД
 func (pg *PostgresStorage) GetGauge(ctx context.Context, name string) (float64, error) {
 	var gauge sql.NullFloat64
 
@@ -149,6 +158,7 @@ func (pg *PostgresStorage) GetGauge(ctx context.Context, name string) (float64, 
 	return gauge.Float64, nil
 }
 
+// GetGauge все данные из БД
 func (pg *PostgresStorage) GetAll(ctx context.Context) ([]storage.Value, error) {
 	var values []storage.Value
 
@@ -191,6 +201,7 @@ func (pg *PostgresStorage) GetAll(ctx context.Context) ([]storage.Value, error) 
 	return values, nil
 }
 
+// SetBatch записывает данные в БД с использование одного запроса
 func (pg *PostgresStorage) SetBatch(ctx context.Context, metrics []metrics.Metric) error {
 	tx, err := pg.db.BeginTx(ctx, pgx.TxOptions{})
 	defer func() {

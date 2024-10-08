@@ -1,3 +1,4 @@
+// Модуль для объявления конфигурации сервера
 package config
 
 import (
@@ -16,6 +17,7 @@ var (
 	Key             string
 )
 
+// ParseFlags читает аргументы переданные при старте сервера
 func ParseFlags() {
 	flag.StringVar(&FlagRunAddr, "a", ":8080", "address and port to run server")
 	flag.StringVar(&LogLevel, "l", "debug", "debug level")
