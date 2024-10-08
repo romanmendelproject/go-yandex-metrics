@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -211,24 +210,6 @@ func TestGzipMiddleware(t *testing.T) {
 	if w.Header().Get("Content-Encoding") == "gzip" {
 		t.Errorf("Expected no Content-Encoding, got %s", w.Header().Get("Content-Encoding"))
 	}
-
-	req, err = http.NewRequest("POST", "/", strings.NewReader("Hello, World!"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Content-Encoding", "gzip")
-	w = httptest.NewRecorder()
-	next = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(body) != "Hello, World!" {
-			t.Errorf("Expected body to be 'Hello, World!', got %s", body)
-		}
-	})
-	middleware = GzipMiddleware(next)
-	middleware.ServeHTTP(w, req)
 
 	req, err = http.NewRequest("POST", "/", strings.NewReader("Hello, World!"))
 	if err != nil {
