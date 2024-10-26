@@ -10,6 +10,7 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/compress"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/crypto"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/hash"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
 )
@@ -17,6 +18,9 @@ import (
 // NewRouter определяет эндпоинты для сервера
 func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 	r := chi.NewRouter()
+	if config.CryptoKey != "" {
+		r.Use(crypto.CryptoMiddleware(config.CryptoKey))
+	}
 	r.Use(logger.RequestLogger)
 	r.Use(compress.GzipMiddleware)
 
@@ -54,7 +58,6 @@ func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 		if config.Key != "" {
 			r.Use(hash.HashMiddleware(config.Key))
 		}
-
 		r.Post("/", handler.UpdateBatch)
 	})
 

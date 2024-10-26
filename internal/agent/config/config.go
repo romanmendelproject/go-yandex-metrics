@@ -1,57 +1,63 @@
-// Модуль для объявления конфигурации агента
 package config
 
 import (
-	"flag"
+	"bytes"
+	"encoding/json"
 	"os"
-	"strconv"
+
+	"github.com/caarlos0/env/v8"
+	"github.com/spf13/pflag"
 )
 
-var FlagReqAddr string
-var ReportSingleInterval int
-var ReportBatchInterval int
-var PollInterval int
-var Key string
-var RateLimit int
-
-// ParseFlags читает аргументы переданные при старте агента
-func ParseFlags() {
-	flag.StringVar(&FlagReqAddr, "a", "localhost:8080", "address and port to run agent")
-	flag.IntVar(&ReportSingleInterval, "r", 5, "send metrics to server")
-	flag.IntVar(&ReportBatchInterval, "b", 30, "send metrics to server")
-	flag.IntVar(&PollInterval, "p", 2, "collect metrics from runtime")
-	flag.StringVar(&Key, "k", "", "hash key")
-	flag.IntVar(&RateLimit, "l", 1, "sender worker count")
-	flag.Parse()
-	activateEnvFlags()
+type ClientFlags struct {
+	FlagReqAddr          string `env:"ADDRESS" json:"address"`
+	ReportSingleInterval int    `env:"REPORT_INTERVAL" json:"report_single_interval"`
+	ReportBatchInterval  int    `env:"REPORT_BATCH_INTERVAL" json:"report_batch_interval"`
+	PollInterval         int    `env:"POLL_INTERVAL" json:"poll_interval"`
+	Key                  string `env:"KEY" json:"key"`
+	RateLimit            int    `env:"RATE_LIMIT" json:"rate_limit"`
+	CryptoKey            string `env:"CRYPTO_KEY" json:"crypto_key"`
+	Config               string `env:"CONFIG" json:"config"`
 }
 
-func activateEnvFlags() {
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		FlagReqAddr = envRunAddr
+func ParseFlags(agentFlags *ClientFlags) error {
+
+	pflag.StringVarP(&agentFlags.FlagReqAddr, "address", "a", "localhost:8080", "Address and port to run agent")
+	pflag.IntVarP(&agentFlags.ReportSingleInterval, "report-single-interval", "r", 5,
+		"Send metrics single method to server")
+	pflag.IntVarP(&agentFlags.ReportBatchInterval, "report-batch-interval", "b", 30,
+		"Send metrics batch method to server")
+	pflag.IntVarP(&agentFlags.PollInterval, "poll-interval", "p", 2,
+		"Wait interval in seconds before reading metrics")
+	pflag.StringVarP(&agentFlags.Key, "key", "k", "",
+		"Hash key to calculate hash sum")
+	pflag.IntVarP(&agentFlags.RateLimit, "rateLimit", "l", 2,
+		"Max count of parallel outbound requests to server")
+	pflag.StringVarP(&agentFlags.CryptoKey, "crypto-key", "e", "/home/user/practicum/go-yandex-metrics/certs/public.pem", "Path to public key RSA to encrypt messages")
+
+	pflag.Parse()
+
+	if err := env.Parse(agentFlags); err != nil {
+		return err
 	}
-	if envReportSingleIntervall := os.Getenv("REPORT_INTERVAL"); envReportSingleIntervall != "" {
-		envReportInterval, err := strconv.Atoi(envReportSingleIntervall)
-		if err != nil {
-			panic(err)
-		}
-		ReportSingleInterval = envReportInterval
+
+	return nil
+}
+
+func ReadConfig() (*ClientFlags, error) {
+	flags := new(ClientFlags)
+
+	pflag.StringVarP(&flags.Config, "config", "c", "/home/user/practicum/go-yandex-metrics/cmd/agent/config.json", "Path to agent config file")
+
+	pflag.Parse()
+
+	data, err := os.ReadFile(flags.Config)
+	if err != nil {
+		return nil, err
 	}
-	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
-		envPollInterval, err := strconv.Atoi(envPollInterval)
-		if err != nil {
-			panic(err)
-		}
-		PollInterval = envPollInterval
+	reader := bytes.NewReader(data)
+	if err := json.NewDecoder(reader).Decode(&flags); err != nil {
+		return nil, err
 	}
-	if envKey := os.Getenv("KEY"); envKey != "" {
-		Key = envKey
-	}
-	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
-		envRateLimit, err := strconv.Atoi(envRateLimit)
-		if err != nil {
-			panic(err)
-		}
-		RateLimit = envRateLimit
-	}
+	return flags, nil
 }

@@ -15,6 +15,7 @@ var (
 	Restore         bool
 	DBDSN           string
 	Key             string
+	CryptoKey       string
 )
 
 // ParseFlags читает аргументы переданные при старте сервера
@@ -26,6 +27,7 @@ func ParseFlags() {
 	flag.BoolVar(&Restore, "r", true, "restore data from file")
 	flag.StringVar(&DBDSN, "d", "", "db connection")
 	flag.StringVar(&Key, "k", "", "hash key")
+	flag.StringVar(&CryptoKey, "crypto-key", "", "crypto key")
 
 	flag.Parse()
 	activateEnvFlags()
@@ -50,5 +52,8 @@ func activateEnvFlags() {
 	}
 	if envKey := os.Getenv("KEY"); envKey != "" {
 		Key = envKey
+	}
+	if envCryptoKey := os.Getenv("KEY"); envCryptoKey != "" {
+		CryptoKey = envCryptoKey
 	}
 }
