@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -156,6 +157,21 @@ func TestNewCompressReader(t *testing.T) {
 	}
 }
 
+func TestCompressRead(t *testing.T) {
+	gzipData := []byte{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x06, 0x00, 0x42, 0x43, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	gzipReader, err := gzip.NewReader(bytes.NewReader(gzipData))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cr := compressReader{r: gzipReader, zr: gzipReader}
+	gzipReader.Close()
+	buf := make([]byte, 10)
+	_, err = cr.Read(buf)
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+	}
+}
+
 func TestCompressReader_Close(t *testing.T) {
 
 	var buf bytes.Buffer
@@ -177,5 +193,35 @@ func TestCompressReader_Close(t *testing.T) {
 
 	if err := cr.Close(); err != nil {
 		t.Fatalf("Close() should not return an error: %v", err)
+	}
+}
+
+func TestGzipMiddleware(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello, World!"))
+	})
+	middleware := GzipMiddleware(next)
+	middleware.ServeHTTP(w, req)
+	if w.Header().Get("Content-Encoding") == "gzip" {
+		t.Errorf("Expected no Content-Encoding, got %s", w.Header().Get("Content-Encoding"))
+	}
+
+	req, err = http.NewRequest("POST", "/", strings.NewReader("Hello, World!"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Encoding", "gzip")
+	w = httptest.NewRecorder()
+	next = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	})
+	middleware = GzipMiddleware(next)
+	middleware.ServeHTTP(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("Expected status code 500, got %d", w.Code)
 	}
 }
