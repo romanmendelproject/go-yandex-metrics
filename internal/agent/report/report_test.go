@@ -22,8 +22,15 @@ func handlerServer(res http.ResponseWriter, req *http.Request) {
 }
 
 func getCfg() {
-	cfg, _ = config.ReadConfig()
-	config.ParseFlags(cfg)
+	cfg, err := config.ParseFlags()
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	config.ReadConfig(cfg)
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
 
 }
 
@@ -96,15 +103,6 @@ func TestReportSingleMetric(t *testing.T) {
 }
 
 func TestReportBatchMetric(t *testing.T) {
-	cfg, err := config.ReadConfig()
-	if err != nil {
-		log.Fatalf(err.Error(), "event", "read config")
-	}
-
-	config.ParseFlags(cfg)
-	if err != nil {
-		log.Fatalf(err.Error(), "event", "read config")
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

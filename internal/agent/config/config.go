@@ -20,33 +20,31 @@ type ClientFlags struct {
 	Config               string `env:"CONFIG" json:"config"`
 }
 
-func ParseFlags(agentFlags *ClientFlags) error {
-
-	pflag.StringVarP(&agentFlags.FlagReqAddr, "address", "a", "localhost:8080", "Address and port to run agent")
-	pflag.IntVarP(&agentFlags.ReportSingleInterval, "report-single-interval", "r", 5,
+func ParseFlags() (*ClientFlags, error) {
+	flags := new(ClientFlags)
+	pflag.StringVarP(&flags.FlagReqAddr, "address", "a", "localhost:8080", "Address and port to run agent")
+	pflag.IntVarP(&flags.ReportSingleInterval, "report-single-interval", "r", 5,
 		"Send metrics single method to server")
-	pflag.IntVarP(&agentFlags.ReportBatchInterval, "report-batch-interval", "b", 30,
+	pflag.IntVarP(&flags.ReportBatchInterval, "report-batch-interval", "b", 30,
 		"Send metrics batch method to server")
-	pflag.IntVarP(&agentFlags.PollInterval, "poll-interval", "p", 2,
+	pflag.IntVarP(&flags.PollInterval, "poll-interval", "p", 2,
 		"Wait interval in seconds before reading metrics")
-	pflag.StringVarP(&agentFlags.Key, "key", "k", "",
+	pflag.StringVarP(&flags.Key, "key", "k", "",
 		"Hash key to calculate hash sum")
-	pflag.IntVarP(&agentFlags.RateLimit, "rateLimit", "l", 2,
+	pflag.IntVarP(&flags.RateLimit, "rateLimit", "l", 2,
 		"Max count of parallel outbound requests to server")
-	pflag.StringVarP(&agentFlags.CryptoKey, "crypto-key", "e", "/home/user/practicum/go-yandex-metrics/certs/public.pem", "Path to public key RSA to encrypt messages")
+	pflag.StringVarP(&flags.CryptoKey, "crypto-key", "e", "/home/user/practicum/go-yandex-metrics/certs/public.pem", "Path to public key RSA to encrypt messages")
 
 	pflag.Parse()
 
-	if err := env.Parse(agentFlags); err != nil {
-		return err
+	if err := env.Parse(flags); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return flags, nil
 }
 
-func ReadConfig() (*ClientFlags, error) {
-	flags := new(ClientFlags)
-
+func ReadConfig(flags *ClientFlags) (*ClientFlags, error) {
 	pflag.StringVarP(&flags.Config, "config", "c", "/home/user/practicum/go-yandex-metrics/cmd/agent/config.json", "Path to agent config file")
 
 	pflag.Parse()

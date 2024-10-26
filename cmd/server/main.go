@@ -46,19 +46,28 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config.ParseFlags()
-	logger.SetLogLevel(config.LogLevel)
+	cfg, err := config.ParseFlags()
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	config.ReadConfig(cfg)
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	logger.SetLogLevel(cfg.LogLevel)
 	var handler *handlers.ServiceHandlers
 
-	if config.DBDSN != "" {
-		database := dbInit(ctx)
+	if cfg.DBDSN != "" {
+		database := dbInit(ctx, cfg)
 		defer database.Close()
 		handler = handlers.NewHandlers(database)
 
 	} else {
-		memStorage := storage.NewMemStorage(config.FileStoragePath)
+		memStorage := storage.NewMemStorage(cfg.FileStoragePath)
 		handler = handlers.NewHandlers(memStorage)
-		if config.Restore {
+		if cfg.Restore {
 			err := memStorage.RestoreFromFile()
 			if err != nil {
 				log.Error(err)
@@ -66,7 +75,7 @@ func main() {
 		}
 		go func() {
 			for {
-				time.Sleep(time.Second * time.Duration(config.StoreInterval))
+				time.Sleep(time.Second * time.Duration(cfg.StoreInterval))
 				err := memStorage.SaveToFile()
 				if err != nil {
 					log.Error(err)
@@ -75,22 +84,21 @@ func main() {
 		}()
 
 	}
-	r := router.NewRouter(handler)
+	r := router.NewRouter(cfg, handler)
 	func() {
 
-		err := http.ListenAndServe(config.FlagRunAddr, r)
+		err := http.ListenAndServe(cfg.FlagRunAddr, r)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 }
 
-func dbInit(ctx context.Context) *dbstorage.PostgresStorage {
+func dbInit(ctx context.Context, cfg *config.ClientFlags) *dbstorage.PostgresStorage {
 	// ps := "postgres://username:userpassword@localhost:5432/dbname"
+	database := dbstorage.NewPostgresStorage(ctx, cfg.DBDSN)
 
-	database := dbstorage.NewPostgresStorage(ctx, config.DBDSN)
-
-	db, err := sql.Open("postgres", config.DBDSN)
+	db, err := sql.Open("postgres", cfg.DBDSN)
 	if err != nil {
 		log.Error("Failed to open DB", "error", err)
 	}

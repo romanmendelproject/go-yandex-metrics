@@ -7,8 +7,29 @@ import (
 	"os"
 	"testing"
 
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+var cfg *config.ClientFlags
+
+func getCfg() {
+	cfg, err := config.ParseFlags()
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	config.ReadConfig(cfg)
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+}
+
+func TestMain(m *testing.M) {
+	getCfg()
+}
 
 func TestPrintVersion(t *testing.T) {
 	buildVersion = "1.2.3"
@@ -43,7 +64,7 @@ func testPrintVersion(t *testing.T, expectedOutput string) {
 func TestDbInit(t *testing.T) {
 	ctx := context.Background()
 
-	storage := dbInit(ctx)
+	storage := dbInit(ctx, cfg)
 
 	assert.NotNil(t, storage)
 

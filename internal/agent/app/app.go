@@ -24,12 +24,12 @@ func RunWorkers(ctx context.Context, cfg *config.ClientFlags, wg *sync.WaitGroup
 
 // StartAgent запускает программу-агента
 func StartAgent() {
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ParseFlags()
 	if err != nil {
 		log.Fatalf(err.Error(), "event", "read config")
 	}
 
-	config.ParseFlags(cfg)
+	config.ReadConfig(cfg)
 	if err != nil {
 		log.Fatalf(err.Error(), "event", "read config")
 	}
@@ -38,7 +38,7 @@ func StartAgent() {
 
 	metricsChannel := make(chan *[]metrics.Metric, 100)
 	var metr metrics.Metrics
-	print(cfg.RateLimit)
+
 	tickerPool := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 
 	wg := &sync.WaitGroup{}

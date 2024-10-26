@@ -16,10 +16,10 @@ import (
 )
 
 // NewRouter определяет эндпоинты для сервера
-func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
+func NewRouter(cfg *config.ClientFlags, handler *handlers.ServiceHandlers) *chi.Mux {
 	r := chi.NewRouter()
-	if config.CryptoKey != "" {
-		r.Use(crypto.CryptoMiddleware(config.CryptoKey))
+	if cfg.CryptoKey != "" {
+		r.Use(crypto.CryptoMiddleware(cfg.CryptoKey))
 	}
 	r.Use(logger.RequestLogger)
 	r.Use(compress.GzipMiddleware)
@@ -55,8 +55,8 @@ func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 	})
 	r.Route("/updates", func(r chi.Router) {
 		r.Use(middleware.AllowContentType("application/json"))
-		if config.Key != "" {
-			r.Use(hash.HashMiddleware(config.Key))
+		if cfg.Key != "" {
+			r.Use(hash.HashMiddleware(cfg.Key))
 		}
 		r.Post("/", handler.UpdateBatch)
 	})

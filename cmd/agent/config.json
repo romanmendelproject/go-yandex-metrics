@@ -1,10 +1,10 @@
 {
     "address": "localhost:8080", 
-    "report_single_interval": 30,
-    "report_batch_interval": 7,
+    "report_single_interval": 5,
+    "report_batch_interval": 30,
     "poll_interval": 2,
     "key": "",
     "rate_limit": 4,
     "crypto_key": "/home/user/practicum/go-yandex-metrics/certs/public.pem",
     "config": "/home/user/practicum/go-yandex-metrics/cmd/agent/config.json"
-}
+} 
