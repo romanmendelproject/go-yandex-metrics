@@ -78,13 +78,13 @@ func sendMetric(cfg *config.ClientFlags, body []byte, url string) error {
 
 		encryptedBody, err := crypto.Encrypt(cfg.CryptoKey, requestBody.String())
 		if err != nil {
-			log.Errorf("failed to encode request body", err)
+			log.Error(err)
 			return err
 		}
 		requestBody = new(bytes.Buffer)
 		_, err = requestBody.WriteString(encryptedBody)
 		if err != nil {
-			log.Errorf("Error decrypt request body: ", err)
+			log.Error(err)
 			return err
 		}
 	}
