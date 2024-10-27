@@ -4,6 +4,9 @@
 
 ## Запуск тестов
 
-1. Клонируем репозиторий и ререходим в него
-2. go test ./...  -coverprofile cover.out 
-3. go tool cover -func cover.out
+1. Клонируем репозиторий и переходим в него
+2. Запускаем БД
+- cd docker
+- docker-compose up -d
+3. go test ./...  -coverprofile cover.out 
+4. go tool cover -func cover.out
