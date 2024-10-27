@@ -6,6 +6,6 @@
     "restore": true, 
     "dbsn": "",
     "key": "",
-    "crypto_key": "/home/user/practicum/go-yandex-metrics/certs/private.pem",
-    "config": "/home/user/practicum/go-yandex-metrics/cmd/server/config.json"
+    "crypto_key": "./certs/private.pem",
+    "config": "./cmd/server/config.json"
 } 

@@ -5,6 +5,6 @@
     "poll_interval": 2,
     "key": "",
     "rate_limit": 4,
-    "crypto_key": "/home/user/practicum/go-yandex-metrics/certs/public.pem",
-    "config": "/home/user/practicum/go-yandex-metrics/cmd/agent/config.json"
+    "crypto_key": "./certs/public.pem",
+    "config": "./cmd/agent/config.json"
 } 

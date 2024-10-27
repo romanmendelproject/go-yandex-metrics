@@ -30,7 +30,7 @@ func ParseFlags() (*ClientFlags, error) {
 	pflag.BoolVarP(&flags.Restore, "Restore", "r", true, "restore data from file")
 	pflag.StringVarP(&flags.DBDSN, "DBDSN", "d", "postgres://username:userpassword@localhost:5432/dbname", "db connection")
 	pflag.StringVarP(&flags.Key, "Key", "k", "", "hash key")
-	pflag.StringVarP(&flags.CryptoKey, "crypto-key", "e", "/home/user/practicum/go-yandex-metrics/certs/private.pem", "crypto-key")
+	pflag.StringVarP(&flags.CryptoKey, "crypto-key", "e", "./certs/private.pem", "crypto-key")
 
 	pflag.Parse()
 
@@ -42,7 +42,7 @@ func ParseFlags() (*ClientFlags, error) {
 }
 
 func ReadConfig(flags *ClientFlags) (*ClientFlags, error) {
-	pflag.StringVarP(&flags.Config, "config", "c", "/home/user/practicum/go-yandex-metrics/cmd/server/config.json", "Path to server config file")
+	pflag.StringVarP(&flags.Config, "config", "c", "./cmd/server/config.json", "Path to server config file")
 
 	pflag.Parse()
 

@@ -33,7 +33,7 @@ func ParseFlags() (*ClientFlags, error) {
 		"Hash key to calculate hash sum")
 	pflag.IntVarP(&flags.RateLimit, "rateLimit", "l", 2,
 		"Max count of parallel outbound requests to server")
-	pflag.StringVarP(&flags.CryptoKey, "crypto-key", "e", "/home/user/practicum/go-yandex-metrics/certs/public.pem", "Path to public key RSA to encrypt messages")
+	pflag.StringVarP(&flags.CryptoKey, "crypto-key", "e", "./certs/public.pem", "Path to public key RSA to encrypt messages")
 
 	pflag.Parse()
 
@@ -45,7 +45,7 @@ func ParseFlags() (*ClientFlags, error) {
 }
 
 func ReadConfig(flags *ClientFlags) (*ClientFlags, error) {
-	pflag.StringVarP(&flags.Config, "config", "c", "/home/user/practicum/go-yandex-metrics/cmd/agent/config.json", "Path to agent config file")
+	pflag.StringVarP(&flags.Config, "config", "c", "./cmd/agent/config.json", "Path to agent config file")
 
 	pflag.Parse()
 
