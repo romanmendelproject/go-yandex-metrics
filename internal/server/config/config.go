@@ -15,7 +15,7 @@ type ClientFlags struct {
 	StoreInterval   int    `env:"STORE_INTERVAL" json:"store_interval"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
 	Restore         bool   `env:"RESTORE" json:"restore"`
-	DBDSN           string `env:"DBDSN" json:"dbsn"`
+	DBDSN           string `env:"DBDSN" json:"dbdsn"`
 	Key             string `env:"KEY" json:"key"`
 	CryptoKey       string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Config          string `env:"CONFIG" json:"config"`

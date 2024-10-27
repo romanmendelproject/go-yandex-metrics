@@ -26,7 +26,7 @@ func ReportSingleMetric(ctx context.Context, cfg *config.ClientFlags, wg *sync.W
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Stoping single sender gorutine")
+			log.Info("Closing report program")
 			return
 		case data := <-metricsChannel:
 			for _, v := range *data {
@@ -50,7 +50,7 @@ func ReportBatchMetric(ctx context.Context, cfg *config.ClientFlags, wg *sync.Wa
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Stoping batch sender gorutine")
+			log.Info("Closing report program")
 			return
 		case data := <-metricsChannel:
 			jsonValue, err := json.Marshal(data)

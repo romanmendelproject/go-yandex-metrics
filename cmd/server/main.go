@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -43,8 +47,13 @@ func printVersion() {
 
 func main() {
 	printVersion()
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	wg := &sync.WaitGroup{}
 
 	cfg, err := config.ParseFlags()
 	if err != nil {
@@ -58,6 +67,8 @@ func main() {
 
 	logger.SetLogLevel(cfg.LogLevel)
 	var handler *handlers.ServiceHandlers
+
+	tickerSaveData := time.NewTicker(time.Duration(cfg.StoreInterval) * time.Second)
 
 	if cfg.DBDSN != "" {
 		database := dbInit(ctx, cfg)
@@ -73,25 +84,40 @@ func main() {
 				log.Error(err)
 			}
 		}
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for {
-				time.Sleep(time.Second * time.Duration(cfg.StoreInterval))
-				err := memStorage.SaveToFile()
-				if err != nil {
-					log.Error(err)
+				select {
+				case <-ctx.Done():
+					err := memStorage.SaveToFile()
+					if err != nil {
+						log.Error(err)
+					}
+					log.Info("Closing program saved data")
+					return
+				case <-tickerSaveData.C:
+					err := memStorage.SaveToFile()
+					if err != nil {
+						log.Error(err)
+					}
 				}
 			}
 		}()
-
 	}
-	r := router.NewRouter(cfg, handler)
-	func() {
 
+	r := router.NewRouter(cfg, handler)
+	go func() {
 		err := http.ListenAndServe(cfg.FlagRunAddr, r)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
+	<-termChan
+	log.Info("Closing main program")
+	cancel()
+
+	wg.Wait()
 }
 
 func dbInit(ctx context.Context, cfg *config.ClientFlags) *dbstorage.PostgresStorage {

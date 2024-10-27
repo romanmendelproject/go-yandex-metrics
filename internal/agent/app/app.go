@@ -3,13 +3,15 @@ package app
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/report"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/signal"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -34,7 +36,8 @@ func StartAgent() {
 		log.Fatalf(err.Error(), "event", "read config")
 	}
 
-	termChan := signal.Signal()
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	metricsChannel := make(chan *[]metrics.Metric, 100)
 	var metr metrics.Metrics
@@ -62,6 +65,7 @@ func StartAgent() {
 	}(ctx)
 
 	<-termChan
+	log.Info("Closing main program")
 	cancel()
 
 	wg.Wait()
