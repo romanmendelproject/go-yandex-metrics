@@ -1,0 +1,10 @@
+{
+    "address": "localhost:8080", 
+    "report_single_interval": 5,
+    "report_batch_interval": 30,
+    "poll_interval": 2,
+    "key": "",
+    "rate_limit": 4,
+    "crypto_key": "./certs/public.pem",
+    "config": "./cmd/agent/config.json"
+} 

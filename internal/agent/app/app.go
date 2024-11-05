@@ -3,39 +3,52 @@ package app
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/report"
-	"github.com/romanmendelproject/go-yandex-metrics/internal/signal"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // RunWorkers запускает горутины для обработки и отпраки метрик
-func RunWorkers(ctx context.Context, wg *sync.WaitGroup, metricsChannel chan *[]metrics.Metric, workerFunc func(ctx context.Context, wg *sync.WaitGroup, metricsChannel <-chan *[]metrics.Metric)) {
-	for w := 1; w <= config.RateLimit; w++ {
+func RunWorkers(ctx context.Context, cfg *config.ClientFlags, wg *sync.WaitGroup, metricsChannel chan *[]metrics.Metric, workerFunc func(ctx context.Context, cfg *config.ClientFlags, wg *sync.WaitGroup, metricsChannel <-chan *[]metrics.Metric)) {
+	for w := 1; w <= cfg.RateLimit; w++ {
 		wg.Add(1)
-		go workerFunc(ctx, wg, metricsChannel)
+		go workerFunc(ctx, cfg, wg, metricsChannel)
 	}
 }
 
 // StartAgent запускает программу-агента
 func StartAgent() {
-	config.ParseFlags()
+	cfg, err := config.ParseFlags()
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
 
-	termChan := signal.Signal()
+	config.ReadConfig(cfg)
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	metricsChannel := make(chan *[]metrics.Metric, 100)
 	var metr metrics.Metrics
 
-	tickerPool := time.NewTicker(time.Duration(config.PollInterval) * time.Second)
+	tickerPool := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	RunWorkers(ctx, wg, metricsChannel, report.ReportBatchMetric)
+	RunWorkers(ctx, cfg, wg, metricsChannel, report.ReportBatchMetric)
 
 	wg.Add(1)
 	go func(ctx context.Context) {
@@ -52,6 +65,7 @@ func StartAgent() {
 	}(ctx)
 
 	<-termChan
+	log.Info("Closing main program")
 	cancel()
 
 	wg.Wait()

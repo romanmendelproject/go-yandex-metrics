@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -43,54 +47,84 @@ func printVersion() {
 
 func main() {
 	printVersion()
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config.ParseFlags()
-	logger.SetLogLevel(config.LogLevel)
+	wg := &sync.WaitGroup{}
+
+	cfg, err := config.ParseFlags()
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	config.ReadConfig(cfg)
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	logger.SetLogLevel(cfg.LogLevel)
 	var handler *handlers.ServiceHandlers
 
-	if config.DBDSN != "" {
-		database := dbInit(ctx)
+	tickerSaveData := time.NewTicker(time.Duration(cfg.StoreInterval) * time.Second)
+
+	if cfg.DBDSN != "" {
+		database := dbInit(ctx, cfg)
 		defer database.Close()
 		handler = handlers.NewHandlers(database)
 
 	} else {
-		memStorage := storage.NewMemStorage(config.FileStoragePath)
+		memStorage := storage.NewMemStorage(cfg.FileStoragePath)
 		handler = handlers.NewHandlers(memStorage)
-		if config.Restore {
+		if cfg.Restore {
 			err := memStorage.RestoreFromFile()
 			if err != nil {
 				log.Error(err)
 			}
 		}
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for {
-				time.Sleep(time.Second * time.Duration(config.StoreInterval))
-				err := memStorage.SaveToFile()
-				if err != nil {
-					log.Error(err)
+				select {
+				case <-ctx.Done():
+					err := memStorage.SaveToFile()
+					if err != nil {
+						log.Error(err)
+					}
+					log.Info("Closing program saved data")
+					return
+				case <-tickerSaveData.C:
+					err := memStorage.SaveToFile()
+					if err != nil {
+						log.Error(err)
+					}
 				}
 			}
 		}()
-
 	}
-	r := router.NewRouter(handler)
-	func() {
 
-		err := http.ListenAndServe(config.FlagRunAddr, r)
+	r := router.NewRouter(cfg, handler)
+	go func() {
+		err := http.ListenAndServe(cfg.FlagRunAddr, r)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
+	<-termChan
+	log.Info("Closing main program")
+	cancel()
+
+	wg.Wait()
 }
 
-func dbInit(ctx context.Context) *dbstorage.PostgresStorage {
+func dbInit(ctx context.Context, cfg *config.ClientFlags) *dbstorage.PostgresStorage {
 	// ps := "postgres://username:userpassword@localhost:5432/dbname"
+	database := dbstorage.NewPostgresStorage(ctx, cfg.DBDSN)
 
-	database := dbstorage.NewPostgresStorage(ctx, config.DBDSN)
-
-	db, err := sql.Open("postgres", config.DBDSN)
+	db, err := sql.Open("postgres", cfg.DBDSN)
 	if err != nil {
 		log.Error("Failed to open DB", "error", err)
 	}

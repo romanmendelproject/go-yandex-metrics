@@ -3,6 +3,7 @@ package report
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -14,12 +15,30 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/utils"
 )
 
+var cfg *config.ClientFlags
+
 func handlerServer(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+func getCfg() {
+	cfg, err := config.ParseFlags()
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+	config.ReadConfig(cfg)
+	if err != nil {
+		log.Fatalf(err.Error(), "event", "read config")
+	}
+
+}
+
+func TestMain(m *testing.M) {
+	getCfg()
+}
+
 func TestSendMetrics(t *testing.T) {
-	config.ParseFlags()
 	type args struct {
 		name   string
 		metric metrics.Metric
@@ -56,7 +75,7 @@ func TestSendMetrics(t *testing.T) {
 		jsonValue, _ := json.Marshal(data)
 		t.Run(tt.name, func(t *testing.T) {
 
-			if err := sendMetric(jsonValue, "http://127.0.0.1:8080/updates/"); (err != nil) != tt.wantErr {
+			if err := sendMetric(cfg, jsonValue, "http://127.0.0.1:8080/updates/"); (err != nil) != tt.wantErr {
 				t.Errorf("reportMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -71,7 +90,7 @@ func TestReportSingleMetric(t *testing.T) {
 	metricsChannel := make(chan *[]metrics.Metric, 1)
 
 	wg.Add(1)
-	go ReportSingleMetric(ctx, &wg, metricsChannel)
+	go ReportSingleMetric(ctx, cfg, &wg, metricsChannel)
 
 	metric := metrics.Metric{
 		ID:    "metric1",
@@ -91,7 +110,7 @@ func TestReportBatchMetric(t *testing.T) {
 	metricsChannel := make(chan *[]metrics.Metric, 1)
 
 	wg.Add(1)
-	go ReportBatchMetric(ctx, &wg, metricsChannel)
+	go ReportBatchMetric(ctx, cfg, &wg, metricsChannel)
 
 	metrics := []metrics.Metric{
 		{ID: "metric1", MType: "gauge", Value: float64Ptr(1.1)},

@@ -10,13 +10,17 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/handlers"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/compress"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/crypto"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/hash"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
 )
 
 // NewRouter определяет эндпоинты для сервера
-func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
+func NewRouter(cfg *config.ClientFlags, handler *handlers.ServiceHandlers) *chi.Mux {
 	r := chi.NewRouter()
+	if cfg.CryptoKey != "" {
+		r.Use(crypto.CryptoMiddleware(cfg.CryptoKey))
+	}
 	r.Use(logger.RequestLogger)
 	r.Use(compress.GzipMiddleware)
 
@@ -51,10 +55,9 @@ func NewRouter(handler *handlers.ServiceHandlers) *chi.Mux {
 	})
 	r.Route("/updates", func(r chi.Router) {
 		r.Use(middleware.AllowContentType("application/json"))
-		if config.Key != "" {
-			r.Use(hash.HashMiddleware(config.Key))
+		if cfg.Key != "" {
+			r.Use(hash.HashMiddleware(cfg.Key))
 		}
-
 		r.Post("/", handler.UpdateBatch)
 	})
 

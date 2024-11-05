@@ -1,71 +1,76 @@
-// Модуль для объявления конфигурации сервера
 package config
 
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestActivateEnvFlags(t *testing.T) {
-	defer os.Clearenv() // Clear environment variables after test
+func TestParseFlags(t *testing.T) {
+	// Сохраняем оригинальные аргументы командной строки
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }() // Восстанавливаем оригинальные аргументы после теста
 
-	os.Setenv("ADDRESS", ":7070")
-	os.Setenv("STORE_INTERVAL", "15")
-	os.Setenv("FILE_STORAGE_PATH", "/tmp/env-db.json")
-	os.Setenv("RESTORE", "true")
-	os.Setenv("DATABASE_DSN", "user:password@/dbname")
-	os.Setenv("KEY", "secretkey")
+	// Задаем тестовые аргументы
+	os.Args = []string{
+		"cmd",
+		"--address", "localhost:9090",
+		"--LogLevel", "info",
+		"--StoreInterval", "10",
+		"--FileStoragePath", "/tmp/test-db.json",
+		"--Restore", "false",
+		"--DBDSN", "postgres://testuser:testpassword@localhost:5432/testdb",
+		"--Key", "testkey",
+		"--crypto-key", "/path/to/test/crypto.pem",
+	}
 
-	activateEnvFlags()
+	flags, err := ParseFlags()
+	if err != nil {
+		t.Fatalf("ParseFlags returned an error: %v", err)
+	}
 
-	if FlagRunAddr != ":7070" {
-		t.Errorf("expected FlagRunAddr %q, got %q", ":7070", FlagRunAddr)
+	// Проверяем значения
+	if flags.FlagRunAddr != "localhost:9090" {
+		t.Errorf("Expected FlagRunAddr to be 'localhost:9090', got '%s'", flags.FlagRunAddr)
 	}
-	if StoreInterval != 15 {
-		t.Errorf("expected StoreInterval %d, got %d", 15, StoreInterval)
+	if flags.LogLevel != "info" {
+		t.Errorf("Expected LogLevel to be 'info', got '%s'", flags.LogLevel)
 	}
-	if FileStoragePath != "/tmp/env-db.json" {
-		t.Errorf("expected FileStoragePath %q, got %q", "/tmp/env-db.json", FileStoragePath)
+	if flags.StoreInterval != 10 {
+		t.Errorf("Expected StoreInterval to be 10, got %d", flags.StoreInterval)
 	}
-	if !Restore {
-		t.Error("expected Restore to be true")
+	if flags.FileStoragePath != "/tmp/test-db.json" {
+		t.Errorf("Expected FileStoragePath to be '/tmp/test-db.json', got '%s'", flags.FileStoragePath)
 	}
-	if DBDSN != "user:password@/dbname" {
-		t.Errorf("expected DBDSN %q, got %q", "user:password@/dbname", DBDSN)
+	if flags.DBDSN != "postgres://testuser:testpassword@localhost:5432/testdb" {
+		t.Errorf("Expected DBDSN to be 'postgres://testuser:testpassword@localhost:5432/testdb', got '%s'", flags.DBDSN)
 	}
-	if Key != "secretkey" {
-		t.Errorf("expected Key %q, got %q", "secretkey", Key)
+	if flags.Key != "testkey" {
+		t.Errorf("Expected Key to be 'testkey', got '%s'", flags.Key)
+	}
+	if flags.CryptoKey != "/path/to/test/crypto.pem" {
+		t.Errorf("Expected CryptoKey to be '/path/to/test/crypto.pem', got '%s'", flags.CryptoKey)
 	}
 }
 
-func TestParseFlags(t *testing.T) {
-	// Устанавливаем флаги командной строки, как если бы мы запустили программу
-	os.Args = []string{
-		"cmd",
-		"-a", ":9090",
-		"-l", "info",
-		"-i", "10",
-		"-f", "/tmp/test-metrics-db.json",
-		"-r", "true",
-	}
+func TestReadConfig(t *testing.T) {
+	// Create a temporary JSON config file for testing
+	configData := `{"config": "/path/to/config.json"}`
+	tempFile, err := os.CreateTemp("", "config.json")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
 
-	// Вызов функции ParseFlags
-	ParseFlags()
+	_, err = tempFile.Write([]byte(configData))
+	assert.NoError(t, err)
+	tempFile.Close()
 
-	// Проверяем значения переменных после парсинга
-	if FlagRunAddr != ":9090" {
-		t.Errorf("Expected FlagRunAddr to be :9090, got %s", FlagRunAddr)
-	}
-	if LogLevel != "info" {
-		t.Errorf("Expected LogLevel to be info, got %s", LogLevel)
-	}
-	if StoreInterval != 10 {
-		t.Errorf("Expected StoreInterval to be 10, got %d", StoreInterval)
-	}
-	if FileStoragePath != "/tmp/test-metrics-db.json" {
-		t.Errorf("Expected FileStoragePath to be /tmp/test-metrics-db.json, got %s", FileStoragePath)
-	}
-	if Restore != true {
-		t.Errorf("Expected Restore to be false, got %t", Restore)
-	}
+	// Set the config flag to the temporary file path
+	flags := &ClientFlags{}
+	flags.Config = tempFile.Name() // Set the config path directly for testing
+
+	result, err := ReadConfig(flags)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
 }
