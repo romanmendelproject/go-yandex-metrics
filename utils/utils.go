@@ -51,7 +51,7 @@ func GetIP() string {
 		log.Error("Error service.GetIP", "Произошла ошибка при получении интерфейсов: "+err.Error())
 		return ""
 	}
-	resIp := ""
+	resIP := ""
 	for _, iface := range interfaces {
 		addrs, err := iface.Addrs()
 		if err != nil {
@@ -62,12 +62,12 @@ func GetIP() string {
 			ipNet, ok := addr.(*net.IPNet)
 			if ok && !ipNet.IP.IsLoopback() {
 				if ipNet.IP.To4() != nil {
-					resIp = ipNet.IP.String()
+					resIP = ipNet.IP.String()
 				}
 			}
 		}
 	}
-	return resIp
+	return resIP
 }
 
 // ISinTrustedNetwork - проверяем находится ли IP адрес в диапазоне доверенной сети
