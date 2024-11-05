@@ -14,6 +14,7 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/config"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/agent/metrics"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/crypto"
+	"github.com/romanmendelproject/go-yandex-metrics/utils"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -99,6 +100,7 @@ func sendMetric(cfg *config.ClientFlags, body []byte, url string) error {
 	req.Header.Add("content-type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("X-Real-IP", utils.GetIP())
 
 	if cfg.Key != "" {
 		hash := crypto.GetHash(body, cfg.Key)

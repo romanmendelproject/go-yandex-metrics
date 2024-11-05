@@ -7,5 +7,6 @@
     "dbsn": "",
     "key": "",
     "crypto_key": "./certs/private.pem",
-    "config": "./cmd/server/config.json"
+    "config": "./cmd/server/config.json",
+    "trusted_subnet": "172.20.16.0/24"
 } 

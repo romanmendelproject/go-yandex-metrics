@@ -13,6 +13,7 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/crypto"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/hash"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
+	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/network"
 )
 
 // NewRouter определяет эндпоинты для сервера
@@ -54,6 +55,9 @@ func NewRouter(cfg *config.ClientFlags, handler *handlers.ServiceHandlers) *chi.
 		r.Post("/*", handlers.HandleBadRequest)
 	})
 	r.Route("/updates", func(r chi.Router) {
+		if cfg.TrustedSubnet != "" {
+			r.Use(network.XrealIPMiddleware(cfg.TrustedSubnet))
+		}
 		r.Use(middleware.AllowContentType("application/json"))
 		if cfg.Key != "" {
 			r.Use(hash.HashMiddleware(cfg.Key))

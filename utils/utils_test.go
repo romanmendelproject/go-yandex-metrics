@@ -134,3 +134,91 @@ func TestGetFloatPtr(t *testing.T) {
 
 	assert.Equal(t, address, valuePtr)
 }
+
+// TestISinTrustedNetwork tests the ISinTrustedNetwork function.
+func TestISinTrustedNetwork(t *testing.T) {
+	tests := []struct {
+		name     string
+		checkIP  string
+		cidr     string
+		expected bool
+	}{
+		{
+			name:     "IP in CIDR range",
+			checkIP:  "192.168.1.10",
+			cidr:     "192.168.1.0/24",
+			expected: true,
+		},
+		{
+			name:     "IP not in CIDR range",
+			checkIP:  "192.168.2.10",
+			cidr:     "192.168.1.0/24",
+			expected: false,
+		},
+		{
+			name:     "Invalid CIDR format",
+			checkIP:  "192.168.1.10",
+			cidr:     "192.168.1.0/33", // Invalid CIDR
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ISinTrustedNetwork(tt.checkIP, tt.cidr)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestStringToInt tests the StringToInt function.
+func TestStringToInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+	}{
+		{
+			name:     "Valid positive integer",
+			input:    "123",
+			expected: 123,
+		},
+		{
+			name:     "Valid negative integer",
+			input:    "-456",
+			expected: -456,
+		},
+		{
+			name:     "Zero",
+			input:    "0",
+			expected: 0,
+		},
+		{
+			name:     "Invalid string",
+			input:    "abc",
+			expected: 0, // Expecting 0 on failure
+		},
+		{
+			name:     "Empty string",
+			input:    "",
+			expected: 0, // Expecting 0 on failure
+		},
+		{
+			name:     "Valid large integer",
+			input:    "2147483647", // Max int32 value
+			expected: 2147483647,
+		},
+		{
+			name:     "Valid small integer",
+			input:    "-2147483648", // Min int32 value
+			expected: -2147483648,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StringToInt(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

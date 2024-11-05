@@ -23,6 +23,7 @@ func TestParseFlags(t *testing.T) {
 		"--DBDSN", "postgres://testuser:testpassword@localhost:5432/testdb",
 		"--Key", "testkey",
 		"--crypto-key", "/path/to/test/crypto.pem",
+		"--trusted-subnet", "192.168.0.0/24",
 	}
 
 	flags, err := ParseFlags()
@@ -51,6 +52,9 @@ func TestParseFlags(t *testing.T) {
 	}
 	if flags.CryptoKey != "/path/to/test/crypto.pem" {
 		t.Errorf("Expected CryptoKey to be '/path/to/test/crypto.pem', got '%s'", flags.CryptoKey)
+	}
+	if flags.TrustedSubnet != "192.168.0.0/24" {
+		t.Errorf("Expected TrustedSubnet to be '192.168.0.0/24', got '%s'", flags.TrustedSubnet)
 	}
 }
 
