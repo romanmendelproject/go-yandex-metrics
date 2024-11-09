@@ -34,7 +34,7 @@ func (h *ProtoServiceHandlers) ValueGauge(ctx context.Context, in *pb.ValueGauge
 
 	response.Value = value
 
-	log.Infof("Received ID: %s, Value: %s", in.ID, value)
+	log.Infof("Received ID: %s, Value: %f", in.ID, value)
 
 	return &response, nil
 }
@@ -52,7 +52,7 @@ func (h *ProtoServiceHandlers) ValueCounter(ctx context.Context, in *pb.ValueCou
 
 	response.Delta = value
 
-	log.Infof("Received ID: %s, Value: %s", in.ID, value)
+	log.Infof("Received ID: %s, Value: %d", in.ID, value)
 
 	return &response, nil
 }
