@@ -46,7 +46,8 @@ func updateMS(ctx context.Context, c pb.MetricsClient, in *pb.UpdateBatchRequest
 func sendMetricProto(ctx context.Context, addr string, metrics []metrics.Metric) error {
 
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
 	if err != nil {
 		log.Error("gRPC agent sendRequestMetricGRPC: did not connect: grpc.Dial, ", "about ERR"+err.Error())
 		return err
