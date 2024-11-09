@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package demo;
+
+option go_package = "github.com/romanmendelproject/go-yandex-metrics";
+
+message Metric {
+  string ID = 1;     // имя метрики
+  string MType = 2;  // параметр, принимающий значение gauge или counter
+  sint64 Delta = 3;  // значение метрики в случае передачи counter
+  double Value = 4;  // значение метрики в случае передачи gauge
+}
+
+message ValueGaugeRequest {
+  string ID = 1;
+}
+
+message ValueGaugeResponse {
+  double Value = 1;
+}
+
+message ValueCounterRequest {
+  string ID = 1;
+}
+  
+message ValueCounterResponse {
+  sint64 Delta = 1;
+}
+
+message UpdateBatchRequest {
+  repeated Metric metric = 1;
+}
+
+message UpdateBatchResponse {
+  repeated Metric metric = 1;
+}
+
+service Metrics {
+  rpc ValueGauge(ValueGaugeRequest) returns (ValueGaugeResponse);
+  rpc ValueCounter(ValueCounterRequest) returns (ValueCounterResponse);
+  rpc UpdateBatch(UpdateBatchRequest) returns (UpdateBatchResponse);
+}
