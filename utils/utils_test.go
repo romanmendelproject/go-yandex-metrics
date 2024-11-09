@@ -246,7 +246,7 @@ func TestUnPointer(t *testing.T) {
 	})
 	// Test cases for float64
 	t.Run("float64 tests", func(t *testing.T) {
-		var floatVal float64 = 3.14
+		var floatVal = 3.14
 		var nilFloatVal *float64 = nil
 		tests := []struct {
 			name     string
@@ -276,7 +276,7 @@ func TestToPointer(t *testing.T) {
 	})
 	// Test cases for float64
 	t.Run("float64 tests", func(t *testing.T) {
-		var floatVal float64 = 3.14
+		var floatVal = 3.14
 		result := ToPointer(floatVal)
 		assert.NotNil(t, result)           // Ensure the result is not nil
 		assert.Equal(t, &floatVal, result) // Ensure the pointer points to the original value
