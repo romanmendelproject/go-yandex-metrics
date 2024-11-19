@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +21,8 @@ import (
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/middlewares/logger"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/router"
 	"github.com/romanmendelproject/go-yandex-metrics/internal/server/storage"
+	pb "github.com/romanmendelproject/go-yandex-metrics/proto"
+	"google.golang.org/grpc"
 
 	_ "github.com/romanmendelproject/go-yandex-metrics/internal/server/dbstorage/migrations"
 
@@ -28,6 +32,7 @@ import (
 var buildVersion string
 var buildDate string
 var buildCommit string
+var errDB = errors.New("")
 
 func printVersion() {
 	if buildVersion == "" {
@@ -67,6 +72,7 @@ func main() {
 
 	logger.SetLogLevel(cfg.LogLevel)
 	var handler *handlers.ServiceHandlers
+	var handlerProto *handlers.ProtoServiceHandlers
 
 	tickerSaveData := time.NewTicker(time.Duration(cfg.StoreInterval) * time.Second)
 
@@ -74,10 +80,12 @@ func main() {
 		database := dbInit(ctx, cfg)
 		defer database.Close()
 		handler = handlers.NewHandlers(database)
+		handlerProto = handlers.NewProtoHandlers(database)
 
 	} else {
 		memStorage := storage.NewMemStorage(cfg.FileStoragePath)
 		handler = handlers.NewHandlers(memStorage)
+		handlerProto = handlers.NewProtoHandlers(memStorage)
 		if cfg.Restore {
 			err := memStorage.RestoreFromFile()
 			if err != nil {
@@ -105,6 +113,8 @@ func main() {
 			}
 		}()
 	}
+
+	go grpcServer(handlerProto)
 
 	r := router.NewRouter(cfg, handler)
 	go func() {
@@ -134,4 +144,17 @@ func dbInit(ctx context.Context, cfg *config.ClientFlags) *dbstorage.PostgresSto
 		log.Error("Failed to run migrations", "error", err)
 	}
 	return database
+}
+
+func grpcServer(gsrv *handlers.ProtoServiceHandlers) {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Error("gRPC failed to listen:", "about ERR"+errDB.Error())
+	}
+	s := grpc.NewServer()
+	pb.RegisterMetricsServer(s, gsrv)
+	log.Infof("server listening at %v", lis.Addr())
+	if err := s.Serve(lis); err != nil {
+		log.Error("gRPC failed to serve:", "about ERR"+errDB.Error())
+	}
 }

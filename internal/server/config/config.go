@@ -19,6 +19,7 @@ type ClientFlags struct {
 	Key             string `env:"KEY" json:"key"`
 	CryptoKey       string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Config          string `env:"CONFIG" json:"config"`
+	TrustedSubnet   string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 }
 
 func ParseFlags() (*ClientFlags, error) {
@@ -31,6 +32,7 @@ func ParseFlags() (*ClientFlags, error) {
 	pflag.StringVarP(&flags.DBDSN, "DBDSN", "d", "postgres://username:userpassword@localhost:5432/dbname", "db connection")
 	pflag.StringVarP(&flags.Key, "Key", "k", "", "hash key")
 	pflag.StringVarP(&flags.CryptoKey, "crypto-key", "e", "./certs/private.pem", "crypto-key")
+	pflag.StringVarP(&flags.TrustedSubnet, "trusted-subnet", "t", "127.0.0.1/32", "trusted subnet")
 
 	pflag.Parse()
 

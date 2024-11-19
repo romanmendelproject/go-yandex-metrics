@@ -48,7 +48,8 @@ func StartAgent() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	RunWorkers(ctx, cfg, wg, metricsChannel, report.ReportBatchMetric)
+	// RunWorkers(ctx, cfg, wg, metricsChannel, report.ReportBatchMetric)
+	RunWorkers(ctx, cfg, wg, metricsChannel, report.ReportBatchMetricProto)
 
 	wg.Add(1)
 	go func(ctx context.Context) {

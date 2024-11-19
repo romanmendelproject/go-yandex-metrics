@@ -1,5 +1,5 @@
 {
-    "address": "localhost:8080", 
+    "address": "localhost:50051", 
     "report_single_interval": 5,
     "report_batch_interval": 30,
     "poll_interval": 2,
